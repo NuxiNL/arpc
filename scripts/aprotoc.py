@@ -505,7 +505,7 @@ class MessageDeclaration:
         if initializers:
             print('  %s() : %s {}' % (self._name, ', '.join(initializers)))
             print()
-        print('  void Parse(const argdata_t& ad) {')
+        print('  void Parse(const argdata_t& ad) override {')
         if self._fields:
             print('    argdata_map_iterator_t it;')
             print('    argdata_map_iterate(&ad, &it);')

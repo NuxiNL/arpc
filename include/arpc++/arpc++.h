@@ -4,12 +4,16 @@
 #include <memory>
 #include <string_view>
 
+#include <argdata.h>
+
 namespace arpc {
 
 class Message {
  public:
   virtual ~Message() {
   }
+
+  virtual void Parse(const argdata_t& ad) = 0;
 };
 
 enum class StatusCode {
