@@ -585,8 +585,8 @@ class ServiceRpcDeclaration:
                 print('  virtual arpc::Status %s(arpc::ServerContext* context, const %s* request, arpc::ServerWriter<%s>* writer) {' % (self._name, self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations)))
             else:
                 print('  virtual arpc::Status %s(arpc::ServerContext* context, const %s* request, %s* response) {' % (self._name, self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations)))
-            print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this implementation");')
-            print('  }')
+        print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this implementation");')
+        print('  }')
 
 
 class ServiceDeclaration:
@@ -660,6 +660,8 @@ print('#include <string_view>')
 print('#include <vector>')
 print()
 print('#include <argdata.h>')
+# TODO(ed): Only include this when generating services.
+print('#include <arpc++/arpc++.h>')
 print()
 print('namespace %s {' % package)
 print('namespace {')
