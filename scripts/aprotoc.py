@@ -497,7 +497,7 @@ class MessageDeclaration:
 
 
     def print_code(self, declarations):
-        print('class %s {' % self._name)
+        print('class %s final : public arpc::Message {' % self._name)
         print(' public:')
         initializers = list(filter(None, (
             field.get_type().get_initializer(field.get_name(True), declarations)
@@ -591,6 +591,26 @@ class ServiceRpcDeclaration:
         print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this implementation");')
         print('  }')
 
+    def print_stub_function(self, service, declarations):
+        if self._argument_type.is_stream():
+            if self._return_type.is_stream():
+                print('  std::unique_ptr<arpc::ClientReaderWriter<%s, %s>> %s(arpc::ClientContext* context) {' % (self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations), self._name))
+                print('    return std::make_unique<arpc::ClientReaderWriter<%s, %s>>(channel_.get(), "%s", "%s", context);' % (self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations), service, self._name))
+                print('}')
+            else:
+                print('  std::unique_ptr<arpc::ClientWriter<%s>> %s(arpc::ClientContext* context, %s* response) {' % (self._argument_type.get_storage_type(declarations), self._name, self._return_type.get_storage_type(declarations)))
+                print('    return std::make_unique<arpc::ClientWriter<%s>>(channel_.get(), "%s", "%s", context, response);' % (self._argument_type.get_storage_type(declarations), service, self._name))
+                print('}')
+        else:
+            if self._return_type.is_stream():
+                print('  std::unique_ptr<arpc::ClientReader<%s>> %s(arpc::ClientContext* context, const %s& request) {' % (self._return_type.get_storage_type(declarations), self._name, self._argument_type.get_storage_type(declarations)))
+                print('    return std::make_unique<arpc::ClientReader<%s>>(channel_.get(), "%s", "%s", context, request);' % (self._return_type.get_storage_type(declarations), service, self._name))
+                print('}')
+            else:
+                print('  arpc::Status %s(arpc::ClientContext* context, const %s& request, %s* response) {' % (self._name, self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations)))
+                print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "TODO(ed)");')
+                print('}')
+
 
 class ServiceDeclaration:
 
@@ -612,7 +632,6 @@ class ServiceDeclaration:
         return r
 
     def print_code(self, declarations):
-        # TODO(ed): Print code for generating a client stub, etc!
         print('namespace %s {' % self._name)
         print()
         print('class Service {')
@@ -621,6 +640,22 @@ class ServiceDeclaration:
             rpc.print_service_function(declarations)
             print()
         print('};')
+        print()
+        print('class Stub {')
+        print(' public:')
+        print('  explicit Stub(const std::shared_ptr<arpc::Channel>& channel)')
+        print('      : channel_(channel) {}')
+        print()
+        for rpc in self._rpcs:
+            rpc.print_stub_function(self._name, declarations)
+            print()
+        print(' private:')
+        print('  const std::shared_ptr<arpc::Channel> channel_;')
+        print('};')
+        print()
+        print('std::unique_ptr<Stub> NewStub(const std::shared_ptr<arpc::Channel>& channel) {')
+        print('  return std::make_unique<Stub>(channel);')
+        print('}')
         print()
         print('}')
         pass
@@ -658,12 +693,12 @@ print('#define APROTOC_%s' % input_sha256)
 print()
 print('#include <cstdint>')
 print('#include <map>')
+print('#include <memory>')
 print('#include <string>')
 print('#include <string_view>')
 print('#include <vector>')
 print()
 print('#include <argdata.h>')
-# TODO(ed): Only include this when generating services.
 print('#include <arpc++/arpc++.h>')
 print()
 print('namespace %s {' % package)
