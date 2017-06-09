@@ -574,6 +574,9 @@ class ServiceRpcDeclaration:
         return (self._argument_type.get_dependencies() |
                 self._return_type.get_dependencies())
 
+    def get_name(self):
+        return self._name
+
     def print_service_function(self, declarations):
         if self._argument_type.is_stream():
             if self._return_type.is_stream():
@@ -597,7 +600,7 @@ class ServiceDeclaration:
 
     def __init__(self, arguments):
         self._name = arguments[0]
-        self._rpcs = arguments[1:]
+        self._rpcs = sorted(arguments[1:], key=lambda rpc: rpc.get_name())
 
     def get_name(self):
         return self._name
