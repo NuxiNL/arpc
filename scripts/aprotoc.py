@@ -195,6 +195,48 @@ class BytesType(StringlikeType):
         print('          %s_ = std::string_view(static_cast<const char*>(valuestr), valuelen);' % name)
 
 
+class FileDescriptorType:
+
+    grammar = ['fd']
+
+    def get_dependencies(self):
+        return set()
+
+    def get_initializer(self, name, declarations):
+        return ''
+
+    def get_storage_type(self, declarations):
+        return 'std::shared_ptr<arpc::FileDescriptor>'
+
+    def print_accessors(self, name, declarations):
+        print('  const std::shared_ptr<arpc::FileDescriptor>& %s() const { return %s_; }' % (name, name))
+        print('  void set_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_ = value; }' % (name, name))
+        print('  void clear_%s() { %s_.reset(); }' % (name, name))
+
+    def print_accessors_repeated(self, name, declarations):
+        print('  const std::shared_ptr<arpc::FileDescriptor>& %s(std::size_t index) const { return %s_[index]; }' % (name, name))
+        print('  void set_%s(std::size_t index, const std::shared_ptr<arpc::FileDescriptor>& value) { %s_[index] = value; }' % (name, name))
+        print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
+
+    def print_fields(self, name, declarations):
+        print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
+
+    def print_parsing(self, name, declarations):
+        print('        std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*value);')
+        print('        if (fd)')
+        print('          %s_ = std::move(fd);' % name)
+
+    def print_parsing_map_value(self, name, declarations):
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*key2);')
+        print('          if (fd)')
+        print('            %s_.emplace(mapkey, nullptr).first->second = std::move(fd);' % name)
+
+    def print_parsing_repeated(self, name, declarations):
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*element);')
+        print('          if (fd)')
+        print('            %s_.emplace_back(std::move(fd));' % name)
+
+
 class ReferenceType:
 
     grammar = pypeg2.word
@@ -245,6 +287,7 @@ PrimitiveType = [
     BooleanType,
     StringType,
     BytesType,
+    FileDescriptorType,
     ReferenceType,
 ]
 
@@ -505,7 +548,7 @@ class MessageDeclaration:
         if initializers:
             print('  %s() : %s {}' % (self._name, ', '.join(initializers)))
             print()
-        print('  void Parse(const argdata_t& ad) override {')
+        print('  void Parse(const argdata_t& ad, arpc::FileDescriptorParser *file_descriptor_parser) override {')
         if self._fields:
             print('    argdata_map_iterator_t it;')
             print('    argdata_map_iterate(&ad, &it);')
@@ -543,13 +586,13 @@ class MessageDeclaration:
 
     def print_parsing(self, name):
         print('        has_%s_ = true;' % name)
-        print('        %s_.Parse(*value);' % name)
+        print('        %s_.Parse(*value, file_descriptor_parser);' % name)
 
     def print_parsing_map_value(self, name):
-        print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2);' % (name, self._name))
+        print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2, file_descriptor_parser);' % (name, self._name))
 
     def print_parsing_repeated(self, name):
-        print('          %s_.emplace_back().Parse(*element);' % name)
+        print('          %s_.emplace_back().Parse(*element, file_descriptor_parser);' % name)
 
 
 class ServiceRpcDeclaration:
