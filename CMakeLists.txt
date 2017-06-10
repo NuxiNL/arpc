@@ -22,7 +22,6 @@ install(DIRECTORY include/arpc++
 )
 
 install(TARGETS arpc EXPORT arpc
-  #PUBLIC_HEADERS DESTINATION include
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
