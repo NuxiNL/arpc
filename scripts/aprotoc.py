@@ -636,9 +636,12 @@ class ServiceDeclaration:
         print()
         print('class Service : public arpc::Service {')
         print(' public:')
+        print('  std::string_view GetName() {')
+        print('    return "%s";' % self._name)
+        print('  }')
         for rpc in self._rpcs:
-            rpc.print_service_function(declarations)
             print()
+            rpc.print_service_function(declarations)
         print('};')
         print()
         print('class Stub {')

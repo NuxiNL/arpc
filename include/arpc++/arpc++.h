@@ -1,6 +1,7 @@
 #ifndef ARPCXX_ARPCXX_H
 #define ARPCXX_ARPCXX_H
 
+#include <map>
 #include <memory>
 #include <string_view>
 
@@ -16,7 +17,10 @@ class Message {
   virtual void Parse(const argdata_t& ad) = 0;
 };
 
-class Service {};
+class Service {
+ public:
+  virtual std::string_view GetName() = 0;
+};
 
 enum class StatusCode {
   OK,
@@ -150,7 +154,15 @@ class ClientReaderWriter {
 
 class Server {
  public:
+  Server(int fd, const std::map<std::string, Service*, std::less<>>& services)
+      : fd_(fd), services_(services) {
+  }
+
   void HandleRequests();
+
+ private:
+  const int fd_;
+  const std::map<std::string, Service*, std::less<>> services_;
 };
 
 class ServerBuilder {
@@ -158,11 +170,19 @@ class ServerBuilder {
   ServerBuilder(int fd) : fd_(fd) {
   }
 
-  std::unique_ptr<Server> Build();
-  void RegisterService(Service* service);
+  std::unique_ptr<Server> Build() {
+    return std::make_unique<Server>(fd_, services_);
+  }
+
+  void RegisterService(Service* service) {
+    // TODO(ed): operator[] doesn't accept std::string_view?
+    // services_[service->GetName()] = service;
+    services_.emplace(service->GetName(), nullptr).first->second = service;
+  }
 
  private:
   const int fd_;
+  std::map<std::string, Service*, std::less<>> services_;
 };
 
 class ServerContext {};
