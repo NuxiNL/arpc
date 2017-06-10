@@ -10,12 +10,27 @@
 
 namespace arpc {
 
+class FileDescriptor {
+ private:
+  FileDescriptor(FileDescriptor const&) = delete;
+  void operator=(FileDescriptor const& x) = delete;
+};
+
+class FileDescriptorParser {
+ public:
+  virtual ~FileDescriptorParser() {
+  }
+
+  virtual std::shared_ptr<FileDescriptor> Get(const argdata_t& ad) = 0;
+};
+
 class Message {
  public:
   virtual ~Message() {
   }
 
-  virtual void Parse(const argdata_t& ad) = 0;
+  virtual void Parse(const argdata_t& ad,
+                     FileDescriptorParser* file_descriptor_parser) = 0;
 };
 
 class Service {
