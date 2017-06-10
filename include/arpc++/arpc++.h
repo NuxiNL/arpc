@@ -16,6 +16,8 @@ class Message {
   virtual void Parse(const argdata_t& ad) = 0;
 };
 
+class Service {};
+
 enum class StatusCode {
   OK,
   UNIMPLEMENTED,
@@ -144,6 +146,23 @@ class ClientReaderWriter {
 
  private:
   ClientReaderWriterImpl impl_;
+};
+
+class Server {
+ public:
+  void HandleRequests();
+};
+
+class ServerBuilder {
+ public:
+  ServerBuilder(int fd) : fd_(fd) {
+  }
+
+  std::unique_ptr<Server> Build();
+  void RegisterService(Service* service);
+
+ private:
+  const int fd_;
 };
 
 class ServerContext {};

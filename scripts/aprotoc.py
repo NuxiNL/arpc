@@ -634,7 +634,7 @@ class ServiceDeclaration:
     def print_code(self, declarations):
         print('namespace %s {' % self._name)
         print()
-        print('class Service {')
+        print('class Service : public arpc::Service {')
         print(' public:')
         for rpc in self._rpcs:
             rpc.print_service_function(declarations)
