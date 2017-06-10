@@ -5,10 +5,13 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <thread>
 
 #include <argdata.h>
 
 namespace arpc {
+
+class ClientContext;
 
 class FileDescriptor {
  private:
@@ -77,15 +80,24 @@ class Status {
   std::string message_;
 };
 
-class Channel {};
+class RpcMethod {
+ public:
+  RpcMethod(std::string_view service, std::string_view rpc) {
+  }
+};
+
+class Channel {
+ public:
+  Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
+                           const Message& request, Message* response);
+};
 
 class ClientContext {};
 
 class ClientReaderImpl {
  public:
-  ClientReaderImpl(Channel* channel, std::string_view service,
-                   std::string_view rpc, ClientContext* context,
-                   const Message& request);
+  ClientReaderImpl(Channel* channel, const RpcMethod& method,
+                   ClientContext* context, const Message& request);
 
   Status Finish();
   bool Read(Message* msg);
@@ -95,9 +107,9 @@ template <typename R>
 class ClientReader {
  public:
   template <typename W>
-  ClientReader(Channel* channel, std::string_view service, std::string_view rpc,
+  ClientReader(Channel* channel, const RpcMethod& method,
                ClientContext* context, const W& request)
-      : impl_(channel, service, rpc, context, request) {
+      : impl_(channel, method, context, request) {
   }
 
   Status Finish() {
@@ -114,9 +126,8 @@ class ClientReader {
 
 class ClientWriterImpl {
  public:
-  ClientWriterImpl(Channel* channel, std::string_view service,
-                   std::string_view rpc, ClientContext* context,
-                   Message* response);
+  ClientWriterImpl(Channel* channel, const RpcMethod& method,
+                   ClientContext* context, Message* response);
 
   Status Finish();
   bool Write(const Message& msg);
@@ -127,9 +138,9 @@ template <typename W>
 class ClientWriter {
  public:
   template <typename R>
-  ClientWriter(Channel* channel, std::string_view service, std::string_view rpc,
+  ClientWriter(Channel* channel, const RpcMethod& method,
                ClientContext* context, R* response)
-      : impl_(channel, service, rpc, context, response) {
+      : impl_(channel, method, context, response) {
   }
 
   Status Finish() {
@@ -150,8 +161,8 @@ class ClientWriter {
 
 class ClientReaderWriterImpl {
  public:
-  ClientReaderWriterImpl(Channel* channel, std::string_view service,
-                         std::string_view rpc, ClientContext* context);
+  ClientReaderWriterImpl(Channel* channel, const RpcMethod& method,
+                         ClientContext* context);
 
   Status Finish();
   bool Read(Message* msg);
@@ -162,9 +173,9 @@ class ClientReaderWriterImpl {
 template <typename W, typename R>
 class ClientReaderWriter {
  public:
-  ClientReaderWriter(Channel* channel, std::string_view service,
-                     std::string_view rpc, ClientContext* context)
-      : impl_(channel, service, rpc, context) {
+  ClientReaderWriter(Channel* channel, const RpcMethod& method,
+                     ClientContext* context)
+      : impl_(channel, method, context) {
   }
 
   Status Finish() {
@@ -193,11 +204,14 @@ class Server {
       : fd_(fd), services_(services) {
   }
 
-  void HandleRequests();
+  int HandleRequests();
 
  private:
   const int fd_;
   const std::map<std::string, Service*, std::less<>> services_;
+
+  std::mutex lock_;
+  std::unique_ptr<argdata_reader_t> reader_;
 };
 
 class ServerBuilder {

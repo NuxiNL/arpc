@@ -623,20 +623,20 @@ class ServiceRpcDeclaration:
         if self._argument_type.is_stream():
             if self._return_type.is_stream():
                 print('  std::unique_ptr<arpc::ClientReaderWriter<%s, %s>> %s(arpc::ClientContext* context) {' % (self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations), self._name))
-                print('    return std::make_unique<arpc::ClientReaderWriter<%s, %s>>(channel_.get(), "%s", "%s", context);' % (self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations), service, self._name))
+                print('    return std::make_unique<arpc::ClientReaderWriter<%s, %s>>(channel_.get(), arpc::RpcMethod("%s", "%s"), context);' % (self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations), service, self._name))
                 print('  }')
             else:
                 print('  std::unique_ptr<arpc::ClientWriter<%s>> %s(arpc::ClientContext* context, %s* response) {' % (self._argument_type.get_storage_type(declarations), self._name, self._return_type.get_storage_type(declarations)))
-                print('    return std::make_unique<arpc::ClientWriter<%s>>(channel_.get(), "%s", "%s", context, response);' % (self._argument_type.get_storage_type(declarations), service, self._name))
+                print('    return std::make_unique<arpc::ClientWriter<%s>>(channel_.get(), arpc::RpcMethod("%s", "%s"), context, response);' % (self._argument_type.get_storage_type(declarations), service, self._name))
                 print('  }')
         else:
             if self._return_type.is_stream():
                 print('  std::unique_ptr<arpc::ClientReader<%s>> %s(arpc::ClientContext* context, const %s& request) {' % (self._return_type.get_storage_type(declarations), self._name, self._argument_type.get_storage_type(declarations)))
-                print('    return std::make_unique<arpc::ClientReader<%s>>(channel_.get(), "%s", "%s", context, request);' % (self._return_type.get_storage_type(declarations), service, self._name))
+                print('    return std::make_unique<arpc::ClientReader<%s>>(channel_.get(), arpc::RpcMethod("%s", "%s"), context, request);' % (self._return_type.get_storage_type(declarations), service, self._name))
                 print('  }')
             else:
                 print('  arpc::Status %s(arpc::ClientContext* context, const %s& request, %s* response) {' % (self._name, self._argument_type.get_storage_type(declarations), self._return_type.get_storage_type(declarations)))
-                print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "TODO(ed)");')
+                print('    return channel_->BlockingUnaryCall(arpc::RpcMethod("%s", "%s"), context, request, response);' % (service, self._name))
                 print('  }')
 
 
