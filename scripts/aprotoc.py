@@ -25,9 +25,6 @@ class NumericType(ScalarType):
     def get_initializer(self, name, declarations):
         return '%s_(%s)' % (name, self.get_default_value())
 
-    def get_return_type(self, declarations):
-        return self.get_storage_type(declarations)
-
     def print_accessors(self, name, declarations):
         print('  %s %s() const { return %s_; }' % (self.get_storage_type(declarations), name, name))
         print('  void set_%s(%s value) { %s_ = value; }' % (name, self.get_storage_type(declarations), name))
@@ -133,9 +130,6 @@ class StringlikeType(ScalarType):
 
     def get_initializer(self, name, declarations):
         return ''
-
-    def get_return_type(self, declarations):
-        return 'const std::string&'
 
     def get_storage_type(self, declarations):
         return 'std::string'
@@ -252,9 +246,6 @@ class ReferenceType:
 
     def get_storage_type(self, declarations):
         return self._name
-
-    def get_return_type(self, declarations):
-        return declarations[self._name].get_return_type()
 
     def is_stream(self):
         return False
@@ -413,9 +404,6 @@ class EnumDeclaration:
     def get_name(self):
         return self._name
 
-    def get_return_type(self):
-        return self._name
-
     def print_accessors(self, name):
         print('  %s %s() const { return %s_; }' % (self._name, name, name))
         print('  void set_%s(%s value) { %s_ = value; }' % (name, self._name, name))
@@ -517,9 +505,6 @@ class MessageDeclaration:
 
     def get_name(self):
         return self._name
-
-    def get_return_type(self):
-        return 'const %s&' % self._name
 
     def print_accessors(self, name):
         print('  bool has_%s() const { return has_%s_; }' % (name, name))
