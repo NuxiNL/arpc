@@ -8,15 +8,31 @@
 #include <thread>
 
 #include <argdata.h>
+#include <unistd.h>
 
 namespace arpc {
 
 class ClientContext;
 
 class FileDescriptor {
+  /// Take ownership of the given file descriptor. It can be used, but not
+  /// closed.
+  FileDescriptor(int f) : fd(f) {
+  }
+
+  ~FileDescriptor() {
+    close(fd);
+  }
+
+  int get_fd() {
+    return fd;
+  }
+
  private:
   FileDescriptor(FileDescriptor const&) = delete;
   void operator=(FileDescriptor const& x) = delete;
+
+  int fd;
 };
 
 class FileDescriptorParser {
@@ -59,7 +75,8 @@ enum class StatusCode {
   INTERNAL,
   UNAVAILABLE,
   DATA_LOSS,
-  DO_NOT_USE, /// Don't use this one. This is to force users to include a default branch.
+  DO_NOT_USE,  /// Don't use this one. This is to force users to include a
+               /// default branch.
 };
 
 class Status {
