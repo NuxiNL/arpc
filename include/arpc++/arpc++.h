@@ -40,7 +40,23 @@ class Service {
 
 enum class StatusCode {
   OK,
+  CANCELLED,
+  UNKNOWN,
+  INVALID_ARGUMENT,
+  DEADLINE_EXCEEDED,
+  NOT_FOUND,
+  ALREADY_EXISTS,
+  PERMISSION_DENIED,
+  UNAUTHENTICATED,
+  RESOURCE_EXHAUSTED,
+  FAILED_PRECONDITION,
+  ABORTED,
+  OUT_OF_RANGE,
   UNIMPLEMENTED,
+  INTERNAL,
+  UNAVAILABLE,
+  DATA_LOSS,
+  DO_NOT_USE, /// Don't use this one. This is to force users to include a default branch.
 };
 
 class Status {
