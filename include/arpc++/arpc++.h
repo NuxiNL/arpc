@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <mutex>
 
 #include <argdata.h>
 #include <unistd.h>
