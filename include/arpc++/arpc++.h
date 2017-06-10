@@ -30,6 +30,9 @@ enum class StatusCode {
 
 class Status {
  public:
+  Status() : code_(StatusCode::OK) {
+  }
+
   Status(StatusCode code, std::string_view message)
       : code_(code), message_(message) {
   }
