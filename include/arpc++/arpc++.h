@@ -222,13 +222,13 @@ class Server {
       : fd_(fd), services_(services) {
   }
 
-  int HandleRequests();
+  int HandleRequest();
 
  private:
   const int fd_;
   const std::map<std::string, Service*, std::less<>> services_;
 
-  std::mutex lock_;
+  std::mutex reader_lock_;
   std::unique_ptr<argdata_reader_t> reader_;
 };
 

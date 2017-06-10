@@ -6,7 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_custom_command(OUTPUT arpc_protocol.h
+	COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto >${CMAKE_BINARY_DIR}/arpc_protocol.h
+	DEPENDS ${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto
+)
+
+include_directories(${CMAKE_BINARY_DIR})
+
 add_library(arpc
+  arpc_protocol.h
   include/arpc++/arpc++.h
   src/server.cc
 )

@@ -1,0 +1,11 @@
+syntax = 'proto3';
+
+package arpc_protocol;
+
+// The ARPC wire format.
+
+// Messages sent from clients to servers.
+message ClientMessage {
+  string service = 1;
+  string rpc = 2;
+}
