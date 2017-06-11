@@ -10,9 +10,11 @@ std::shared_ptr<FileDescriptor> ArgdataReaderFileDescriptorParser::Get(
     return nullptr;
 
   // Return existing shared pointer instance.
-  auto lookup = file_descriptors_.find(fd);
-  if (lookup != file_descriptors_.end())
-    return *lookup;
+  for (auto shared : file_descriptors_) {
+    if (shared->get_fd() == fd) {
+      return shared;
+    }
+  }
 
   // None found. Create new instance.
   argdata_reader_release_fd(reader_, fd);
