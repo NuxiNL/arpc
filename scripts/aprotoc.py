@@ -216,17 +216,17 @@ class FileDescriptorType:
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
 
     def print_parsing(self, name, declarations):
-        print('        std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*value);')
+        print('        std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*value);')
         print('        if (fd)')
         print('          %s_ = std::move(fd);' % name)
 
     def print_parsing_map_value(self, name, declarations):
-        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*key2);')
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*key2);')
         print('          if (fd)')
         print('            %s_.emplace(mapkey, nullptr).first->second = std::move(fd);' % name)
 
     def print_parsing_repeated(self, name, declarations):
-        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Get(*element);')
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*element);')
         print('          if (fd)')
         print('            %s_.emplace_back(std::move(fd));' % name)
 

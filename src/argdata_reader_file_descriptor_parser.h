@@ -14,7 +14,7 @@ class ArgdataReaderFileDescriptorParser : public arpc::FileDescriptorParser {
       : reader_(reader) {
   }
 
-  std::shared_ptr<FileDescriptor> Get(const argdata_t& ad) override;
+  std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) override;
 
  private:
   // Comparator for finding file descriptors in a set of shared pointers

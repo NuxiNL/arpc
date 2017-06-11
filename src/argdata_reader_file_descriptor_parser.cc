@@ -2,7 +2,7 @@
 
 using namespace arpc;
 
-std::shared_ptr<FileDescriptor> ArgdataReaderFileDescriptorParser::Get(
+std::shared_ptr<FileDescriptor> ArgdataReaderFileDescriptorParser::Parse(
     const argdata_t& ad) {
   // Parse file descriptor object.
   int fd;

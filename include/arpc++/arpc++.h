@@ -42,7 +42,7 @@ class FileDescriptorParser {
   virtual ~FileDescriptorParser() {
   }
 
-  virtual std::shared_ptr<FileDescriptor> Get(const argdata_t& ad) = 0;
+  virtual std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) = 0;
 };
 
 class Message {
