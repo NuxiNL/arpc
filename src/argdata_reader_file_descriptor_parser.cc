@@ -10,6 +10,7 @@ std::shared_ptr<FileDescriptor> ArgdataReaderFileDescriptorParser::Get(
     return nullptr;
 
   // Return existing shared pointer instance.
+  // TODO(ed): This should use find().
   for (auto shared : file_descriptors_) {
     if (shared->get_fd() == fd) {
       return shared;
