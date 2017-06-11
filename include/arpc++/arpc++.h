@@ -1,6 +1,8 @@
 #ifndef ARPCXX_ARPCXX_H
 #define ARPCXX_ARPCXX_H
 
+#include <unistd.h>
+
 #include <map>
 #include <memory>
 #include <mutex>
@@ -8,7 +10,6 @@
 #include <string_view>
 #include <thread>
 
-#include <unistd.h>
 #include <argdata.hpp>
 
 namespace arpc {
