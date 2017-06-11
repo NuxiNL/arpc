@@ -18,7 +18,9 @@ add_library(arpc
   include/arpc++/arpc++.h
   src/argdata_reader_file_descriptor_parser.cc
   src/server.cc
+  src/servercontext.cc
 )
+target_link_libraries(arpc PUBLIC argdata)
 target_include_directories(arpc PUBLIC include)
 
 install(FILES scripts/aprotoc.py

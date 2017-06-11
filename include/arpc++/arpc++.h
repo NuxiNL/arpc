@@ -8,8 +8,8 @@
 #include <string_view>
 #include <thread>
 
-#include <argdata.hpp>
 #include <unistd.h>
+#include <argdata.hpp>
 
 namespace arpc {
 
@@ -253,7 +253,9 @@ class ServerBuilder {
   std::map<std::string, Service*, std::less<>> services_;
 };
 
-class ServerContext {};
+class ServerContext {
+  bool IsCancelled() const;
+};
 
 template <typename R>
 class ServerReader {};
