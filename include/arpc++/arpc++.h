@@ -19,22 +19,22 @@ class FileDescriptor {
  public:
   /// Take ownership of the given file descriptor. It can be used, but not
   /// closed.
-  FileDescriptor(int f) : fd(f) {
+  explicit FileDescriptor(int fd) : fd_(fd) {
   }
 
   ~FileDescriptor() {
-    close(fd);
+    close(fd_);
   }
 
   int get_fd() {
-    return fd;
+    return fd_;
   }
 
  private:
   FileDescriptor(FileDescriptor const&) = delete;
   void operator=(FileDescriptor const& x) = delete;
 
-  int fd;
+  int fd_;
 };
 
 class FileDescriptorParser {
