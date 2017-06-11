@@ -3,12 +3,12 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <thread>
-#include <mutex>
 
-#include <argdata.h>
+#include <argdata.hpp>
 #include <unistd.h>
 
 namespace arpc {
@@ -16,6 +16,7 @@ namespace arpc {
 class ClientContext;
 
 class FileDescriptor {
+ public:
   /// Take ownership of the given file descriptor. It can be used, but not
   /// closed.
   FileDescriptor(int f) : fd(f) {
