@@ -16,6 +16,7 @@ include_directories(${CMAKE_BINARY_DIR})
 add_library(arpc
   arpc_protocol.h
   include/arpc++/arpc++.h
+  src/argdata_reader_file_descriptor_parser.cc
   src/server.cc
 )
 target_include_directories(arpc PUBLIC include)
