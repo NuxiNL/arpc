@@ -254,6 +254,7 @@ class ServerBuilder {
 };
 
 class ServerContext {
+ public:
   bool IsCancelled() const;
 };
 
@@ -261,7 +262,12 @@ template <typename R>
 class ServerReader {};
 
 template <typename W>
-class ServerWriter {};
+class ServerWriter {
+ public:
+  bool Write(const W& msg) {
+    // TODO: implement
+  }
+};
 
 template <typename W, typename R>
 class ServerReaderWriter {};
