@@ -5,16 +5,15 @@
 
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <string_view>
-#include <thread>
 
-#include <argdata.hpp>
+#include <argdata.h>
 
 namespace arpc {
 
 class ClientContext;
+class ServerContext;
 
 class FileDescriptor {
  public:
@@ -55,11 +54,6 @@ class Message {
                      FileDescriptorParser* file_descriptor_parser) = 0;
 };
 
-class Service {
- public:
-  virtual std::string_view GetName() = 0;
-};
-
 enum class StatusCode {
   OK,
   CANCELLED,
@@ -78,8 +72,8 @@ enum class StatusCode {
   INTERNAL,
   UNAVAILABLE,
   DATA_LOSS,
-  DO_NOT_USE,  /// Don't use this one. This is to force users to include a
-               /// default branch.
+  // Don't use this one. This is to force users to include a default branch.
+  DO_NOT_USE = -1
 };
 
 class Status {
@@ -91,19 +85,35 @@ class Status {
       : code_(code), message_(message) {
   }
 
+  StatusCode error_code() const {
+    return code_;
+  }
+
+  const std::string& error_message() const {
+    return message_;
+  }
+
   bool ok() const {
     return code_ == StatusCode::OK;
   }
 
  private:
-  StatusCode code_;
-  std::string message_;
+  const StatusCode code_;
+  const std::string message_;
 };
 
 class RpcMethod {
  public:
   RpcMethod(std::string_view service, std::string_view rpc) {
   }
+};
+
+class Service {
+ public:
+  virtual std::string_view GetName() = 0;
+  virtual Status BlockingUnaryCall(
+      std::string_view rpc, ServerContext* context, const argdata_t& request,
+      FileDescriptorParser* file_descriptor_parser) = 0;
 };
 
 class Channel {
@@ -229,9 +239,6 @@ class Server {
  private:
   const int fd_;
   const std::map<std::string, Service*, std::less<>> services_;
-
-  std::mutex reader_lock_;
-  std::unique_ptr<argdata_reader_t> reader_;
 };
 
 class ServerBuilder {

@@ -605,6 +605,16 @@ class ServiceRpcDeclaration:
     def get_name(self):
         return self._name
 
+    def print_service_blocking_unary_call(self, declarations):
+        if not self._argument_type.is_stream() and not self._return_type.is_stream():
+            print('    if (rpc == "%s") {' % self._name)
+            print('      %s request_object;' % self._argument_type.get_storage_type(declarations))
+            print('      request_object.Parse(request, file_descriptor_parser);')
+            print('      %s response_object;' % self._return_type.get_storage_type(declarations))
+            # TODO(ed): Properly serialize the response object!
+            print('      return %s(context, &request_object, &response_object);' % self._name)
+            print('    }')
+
     def print_service_function(self, declarations):
         if self._argument_type.is_stream():
             if self._return_type.is_stream():
@@ -664,9 +674,16 @@ class ServiceDeclaration:
         print()
         print('class Service : public arpc::Service {')
         print(' public:')
-        print('  std::string_view GetName() {')
+        print('  std::string_view GetName() override {')
         print('    return "%s";' % self._name)
         print('  }')
+        print()
+        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser) override {')
+        for rpc in self._rpcs:
+            rpc.print_service_blocking_unary_call(declarations)
+        print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')
+        print('  }')
+
         for rpc in self._rpcs:
             print()
             rpc.print_service_function(declarations)
