@@ -42,7 +42,8 @@ int Server::HandleRequest() {
       // Service found. Invoke call.
       ServerContext context;
       Status rpc_status = service->second->BlockingUnaryCall(
-          rpc_method.rpc(), &context, *argdata_t::null(), &file_descriptor_parser);
+          rpc_method.rpc(), &context, *argdata_t::null(),
+          &file_descriptor_parser);
       arpc_protocol::Status* status = unary_response->mutable_status();
       // TODO(ed): Fix!
       // status->set_code(rpc_status.error_code());
