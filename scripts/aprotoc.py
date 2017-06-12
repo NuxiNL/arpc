@@ -156,8 +156,13 @@ class StringType(StringlikeType):
     grammar = ['string']
 
     def print_building(self, name, declarations):
-        print('        argdata_t* value = argdata_create_str(%s_.data(), %s_.size());' % (name, name))
-        print('        argdata_store->StoreArgdata(value);')
+        print('        values.push_back(argdata_store->CreateString(%s_));' % name)
+
+    def print_building_map_key(self):
+        print('          mapkeys.push_back(argdata_store->CreateString(mapentry.first));')
+
+    def print_building_map_value(self, declarations):
+        print('          mapvalues.push_back(argdata_store->CreateString(mapentry.second));')
 
     def print_parsing(self, name, declarations):
         print('        const char* valuestr;');
@@ -223,9 +228,7 @@ class FileDescriptorType:
         print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
 
     def print_building(self, name, declarations):
-        print('        argdata_t* value = argdata_create_fd(%s_->get_fd());' % name)
-        print('        argdata_store->StoreArgdata(value);')
-        print('        argdata_store->StoreFileDescriptor(%s_);' % name)
+        print('        values.push_back(argdata_store->CreateFileDescriptor(%s_));' % name)
 
     def print_fields(self, name, declarations):
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
@@ -337,6 +340,15 @@ class MapType:
         print('  const %s& %s() const { return %s_; }' % (self.get_storage_type(declarations), name, name))
         print('  %s* mutable_%s() { return &%s_; }' % (self.get_storage_type(declarations), name, name))
 
+    def print_building(self, name, declarations):
+        print('        std::vector<const argdata_t*> mapkeys;')
+        print('        std::vector<const argdata_t*> mapvalues;')
+        print('        for (const auto& mapentry : %s_) {' % name)
+        self._key_type.print_building_map_key()
+        self._value_type.print_building_map_value(declarations)
+        print('        }')
+        print('        values.push_back(argdata_store->CreateMap(std::move(mapkeys), std::move(mapvalues)));')
+
     def print_fields(self, name, declarations):
         print('  %s %s_;' % (self.get_storage_type(declarations), name))
 
@@ -442,9 +454,7 @@ class EnumDeclaration:
         print('  void add_%s(%s value) { return %s_.push_back(value); }' % (name, self._name, name))
 
     def print_building(self, name):
-        print('        std::string_view value_str = %s_Name(%s_);' % (self._name, name))
-        print('        argdata_t* value = argdata_create_str(value_str.data(), value_str.size());')
-        print('        argdata_store->StoreArgdata(value);')
+        print('        values.push_back(argdata_store->CreateString(%s_Name(%s_)));' % (self._name, name))
 
     def print_code(self, declarations):
         print('enum %s {' % self._name)
@@ -593,19 +603,14 @@ class MessageDeclaration:
         print()
         print('  const argdata_t* Build(arpc::ArgdataStore* argdata_store) const override {')
         if self._fields:
-            print('    std::vector<const argdata_t*> *keys = argdata_store->GetVector();')
-            print('    std::vector<const argdata_t*> *values = argdata_store->GetVector();')
+            print('    std::vector<const argdata_t*> keys;')
+            print('    std::vector<const argdata_t*> values;')
             for field in sorted(self._fields, key=lambda field: field.get_name(False)):
                 print('      if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
-                print('        argdata_t* key = argdata_create_str("%s", %d);' % (field.get_name(False), len(field.get_name(False))))
-                print('        argdata_store->StoreArgdata(key);')
-                print('        keys->push_back(key);')
+                print('        keys.push_back(argdata_store->CreateString("%s"));' % field.get_name(False))
                 field.get_type().print_building(field.get_name(True), declarations)
-                print('        keys->push_back(value);')
                 print('      }')
-            print('      argdata_t* root = argdata_create_map(keys->data(), values->data(), keys->size());')
-            print('      argdata_store->StoreArgdata(root);')
-            print('      return root;')
+            print('      return argdata_store->CreateMap(std::move(keys), std::move(values));')
         else:
             print('    return &argdata_null;')
         print('  }')

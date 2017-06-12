@@ -48,21 +48,16 @@ class FileDescriptorParser {
 
 class ArgdataStore {
  public:
-  std::vector<const argdata_t*>* GetVector() {
-    return &vectors_.emplace_front();
-  }
-
-  void StoreArgdata(argdata_t* ad) {
-    argdatas_.emplace_back(ad);
-  }
-
-  void StoreFileDescriptor(const std::shared_ptr<FileDescriptor>& file_descriptor) {
-    file_descriptors_.push_back(file_descriptor);
-  }
+  const argdata_t* CreateFileDescriptor(
+      const std::shared_ptr<FileDescriptor>& value);
+  const argdata_t* CreateMap(std::vector<const argdata_t*> keys,
+                             std::vector<const argdata_t*> values);
+  const argdata_t* CreateString(std::string_view value);
 
  private:
   std::vector<std::unique_ptr<argdata_t>> argdatas_;
   std::vector<std::shared_ptr<FileDescriptor>> file_descriptors_;
+  std::forward_list<std::string> strings_;
   std::forward_list<std::vector<const argdata_t*>> vectors_;
 };
 
