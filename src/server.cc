@@ -45,8 +45,7 @@ int Server::HandleRequest() {
           rpc_method.rpc(), &context, *argdata_t::null(),
           &file_descriptor_parser);
       arpc_protocol::Status* status = unary_response->mutable_status();
-      // TODO(ed): Fix!
-      // status->set_code(rpc_status.error_code());
+      status->set_code(arpc_protocol::StatusCode(rpc_status.error_code()));
       status->set_message(rpc_status.error_message());
     }
   } else {

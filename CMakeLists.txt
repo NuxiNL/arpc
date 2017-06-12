@@ -17,6 +17,7 @@ add_library(arpc
   arpc_protocol.h
   include/arpc++/arpc++.h
   src/argdata_reader_file_descriptor_parser.cc
+  src/status_code.cc
   src/server.cc
   src/servercontext.cc
 )
