@@ -13,7 +13,7 @@ class ArgdataReaderFileDescriptorParser : public arpc::FileDescriptorParser {
   ArgdataReaderFileDescriptorParser(argdata_reader_t* reader)
       : reader_(reader) {
   }
-  ~ArgdataReaderFileDescriptorParser();
+  ~ArgdataReaderFileDescriptorParser() override;
 
   std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) override;
 
