@@ -41,14 +41,19 @@ int Server::HandleRequest() {
     } else {
       // Service found. Invoke call.
       ServerContext context;
+      const argdata_t* response = argdata_t::null();
+      ArgdataBuilder argdata_builder;
       Status rpc_status = service->second->BlockingUnaryCall(
           rpc_method.rpc(), &context, *argdata_t::null(),
-          &file_descriptor_parser);
+          &file_descriptor_parser, &response, &argdata_builder);
       arpc_protocol::Status* status = unary_response->mutable_status();
       status->set_code(arpc_protocol::StatusCode(rpc_status.error_code()));
       status->set_message(rpc_status.error_message());
+      // TODO(ed): Set response body!
     }
+    // TODO(ed): Set response!
   } else {
+    // TODO(ed): Implement streaming RPCs!
   }
   return 0;
 }

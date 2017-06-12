@@ -445,19 +445,19 @@ class EnumDeclaration:
         print('  %s %s_;' % (self._name, name))
 
     def print_parsing(self, name):
-        print('        const char *enumstr;')
+        print('        const char* enumstr;')
         print('        std::size_t enumlen;')
         print('        if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
         print('          %s_Parse(std::string_view(enumstr, enumlen), &%s_);' % (self._name, name))
 
     def print_parsing_map_value(self, name):
-        print('          const char *enumstr;')
+        print('          const char* enumstr;')
         print('          std::size_t enumlen;')
         print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
         print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_.emplace(mapkey, %s::%s).first->second);' % (self._name, name, self._name, self._canonical[0]))
 
     def print_parsing_repeated(self, name):
-        print('          const char *enumstr;')
+        print('          const char* enumstr;')
         print('          std::size_t enumlen;')
         print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
         print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_.emplace_back(%s::%s));' % (self._name, name, self._name, self._canonical[0]))
@@ -533,7 +533,7 @@ class MessageDeclaration:
         if initializers:
             print('  %s() : %s {}' % (self._name, ', '.join(initializers)))
             print()
-        print('  void Parse(const argdata_t& ad, arpc::FileDescriptorParser *file_descriptor_parser) override {')
+        print('  void Parse(const argdata_t& ad, arpc::FileDescriptorParser* file_descriptor_parser) override {')
         if self._fields:
             print('    argdata_map_iterator_t it;')
             print('    argdata_map_iterate(&ad, &it);')
@@ -552,6 +552,10 @@ class MessageDeclaration:
                 prefix = '} else '
             print('      }')
             print('    }')
+        print('  }')
+        print()
+        print('  const argdata_t* Build(arpc::ArgdataBuilder* argdata_builder) const override {')
+        print('    return &argdata_null;')
         print('  }')
         print()
 
@@ -612,7 +616,10 @@ class ServiceRpcDeclaration:
             print('      request_object.Parse(request, file_descriptor_parser);')
             print('      %s response_object;' % self._return_type.get_storage_type(declarations))
             # TODO(ed): Properly serialize the response object!
-            print('      return %s(context, &request_object, &response_object);' % self._name)
+            print('      arpc::Status status = %s(context, &request_object, &response_object);' % self._name)
+            print('      if (status.ok())')
+            print('        *response = response_object.Build(argdata_builder);')
+            print('      return status;')
             print('    }')
 
     def print_service_function(self, declarations):
@@ -678,7 +685,7 @@ class ServiceDeclaration:
         print('    return "%s";' % self._name)
         print('  }')
         print()
-        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser) override {')
+        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser, const argdata_t** response, arpc::ArgdataBuilder* argdata_builder) override {')
         for rpc in self._rpcs:
             rpc.print_service_blocking_unary_call(declarations)
         print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')

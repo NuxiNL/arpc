@@ -45,6 +45,8 @@ class FileDescriptorParser {
   virtual std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) = 0;
 };
 
+class ArgdataBuilder {};
+
 class Message {
  public:
   virtual ~Message() {
@@ -52,6 +54,7 @@ class Message {
 
   virtual void Parse(const argdata_t& ad,
                      FileDescriptorParser* file_descriptor_parser) = 0;
+  virtual const argdata_t* Build(ArgdataBuilder* argdata_builder) const = 0;
 };
 
 enum class StatusCode {
@@ -111,9 +114,11 @@ class RpcMethod {
 class Service {
  public:
   virtual std::string_view GetName() = 0;
-  virtual Status BlockingUnaryCall(
-      std::string_view rpc, ServerContext* context, const argdata_t& request,
-      FileDescriptorParser* file_descriptor_parser) = 0;
+  virtual Status BlockingUnaryCall(std::string_view rpc, ServerContext* context,
+                                   const argdata_t& request,
+                                   FileDescriptorParser* file_descriptor_parser,
+                                   const argdata_t** response,
+                                   ArgdataBuilder* argdata_builder) = 0;
 };
 
 class Channel {
