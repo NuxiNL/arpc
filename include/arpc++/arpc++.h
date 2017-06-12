@@ -3,12 +3,13 @@
 
 #include <unistd.h>
 
+#include <forward_list>
 #include <map>
 #include <memory>
 #include <string>
 #include <string_view>
 
-#include <argdata.h>
+#include <argdata.hpp>
 
 namespace arpc {
 
@@ -45,7 +46,25 @@ class FileDescriptorParser {
   virtual std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) = 0;
 };
 
-class ArgdataBuilder {};
+class ArgdataStore {
+ public:
+  std::vector<const argdata_t*>* GetVector() {
+    return &vectors_.emplace_front();
+  }
+
+  void StoreArgdata(argdata_t* ad) {
+    argdatas_.emplace_back(ad);
+  }
+
+  void StoreFileDescriptor(const std::shared_ptr<FileDescriptor>& file_descriptor) {
+    file_descriptors_.push_back(file_descriptor);
+  }
+
+ private:
+  std::vector<std::unique_ptr<argdata_t>> argdatas_;
+  std::vector<std::shared_ptr<FileDescriptor>> file_descriptors_;
+  std::forward_list<std::vector<const argdata_t*>> vectors_;
+};
 
 class Message {
  public:
@@ -54,7 +73,7 @@ class Message {
 
   virtual void Parse(const argdata_t& ad,
                      FileDescriptorParser* file_descriptor_parser) = 0;
-  virtual const argdata_t* Build(ArgdataBuilder* argdata_builder) const = 0;
+  virtual const argdata_t* Build(ArgdataStore* argdata_store) const = 0;
 };
 
 enum class StatusCode {
@@ -118,7 +137,7 @@ class Service {
                                    const argdata_t& request,
                                    FileDescriptorParser* file_descriptor_parser,
                                    const argdata_t** response,
-                                   ArgdataBuilder* argdata_builder) = 0;
+                                   ArgdataStore* argdata_store) = 0;
 };
 
 class Channel {

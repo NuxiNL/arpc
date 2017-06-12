@@ -42,10 +42,10 @@ int Server::HandleRequest() {
       // Service found. Invoke call.
       ServerContext context;
       const argdata_t* response = argdata_t::null();
-      ArgdataBuilder argdata_builder;
+      ArgdataStore argdata_store;
       Status rpc_status = service->second->BlockingUnaryCall(
           rpc_method.rpc(), &context, *argdata_t::null(),
-          &file_descriptor_parser, &response, &argdata_builder);
+          &file_descriptor_parser, &response, &argdata_store);
       arpc_protocol::Status* status = unary_response->mutable_status();
       status->set_code(arpc_protocol::StatusCode(rpc_status.error_code()));
       status->set_message(rpc_status.error_message());

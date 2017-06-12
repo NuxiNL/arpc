@@ -131,6 +131,9 @@ class StringlikeType(ScalarType):
     def get_initializer(self, name, declarations):
         return ''
 
+    def get_isset_expression(self, name, declarations):
+        return '!%s_.empty()' % name
+
     def get_storage_type(self, declarations):
         return 'std::string'
 
@@ -151,6 +154,10 @@ class StringlikeType(ScalarType):
 class StringType(StringlikeType):
 
     grammar = ['string']
+
+    def print_building(self, name, declarations):
+        print('        argdata_t* value = argdata_create_str(%s_.data(), %s_.size());' % (name, name))
+        print('        argdata_store->StoreArgdata(value);')
 
     def print_parsing(self, name, declarations):
         print('        const char* valuestr;');
@@ -199,6 +206,9 @@ class FileDescriptorType:
     def get_initializer(self, name, declarations):
         return ''
 
+    def get_isset_expression(self, name, declarations):
+        return name + '_'
+
     def get_storage_type(self, declarations):
         return 'std::shared_ptr<arpc::FileDescriptor>'
 
@@ -211,6 +221,11 @@ class FileDescriptorType:
         print('  const std::shared_ptr<arpc::FileDescriptor>& %s(std::size_t index) const { return %s_[index]; }' % (name, name))
         print('  void set_%s(std::size_t index, const std::shared_ptr<arpc::FileDescriptor>& value) { %s_[index] = value; }' % (name, name))
         print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
+
+    def print_building(self, name, declarations):
+        print('        argdata_t* value = argdata_create_fd(%s_->get_fd());' % name)
+        print('        argdata_store->StoreArgdata(value);')
+        print('        argdata_store->StoreFileDescriptor(%s_);' % name)
 
     def print_fields(self, name, declarations):
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
@@ -244,6 +259,9 @@ class ReferenceType:
     def get_initializer(self, name, declarations):
         return declarations[self._name].get_initializer(name)
 
+    def get_isset_expression(self, name, declarations):
+        return declarations[self._name].get_isset_expression(name)
+
     def get_storage_type(self, declarations):
         return self._name
 
@@ -255,6 +273,9 @@ class ReferenceType:
 
     def print_accessors_repeated(self, name, declarations):
         declarations[self._name].print_accessors_repeated(name)
+
+    def print_building(self, name, declarations):
+        declarations[self._name].print_building(name)
 
     def print_fields(self, name, declarations):
         declarations[self._name].print_fields(name)
@@ -301,6 +322,9 @@ class MapType:
     def get_dependencies(self):
         return (self._key_type.get_dependencies() |
                 self._value_type.get_dependencies())
+
+    def get_isset_expression(self, name, declarations):
+        return '!%s_.empty()' % name
 
     def get_initializer(self, name, declarations):
         return ''
@@ -398,6 +422,9 @@ class EnumDeclaration:
     def get_dependencies(self):
         return set()
 
+    def get_isset_expression(self, name):
+        return '%s_ != %s::%s' % (name, self._name, self._canonical[0])
+
     def get_initializer(self, name):
         return '%s_(%s::%s)' % (name, self._name, self._canonical[0])
 
@@ -413,6 +440,11 @@ class EnumDeclaration:
         print('  %s %s(std::size_t index) const { return %s_[index]; }' % (self._name, name, name))
         print('  void set_%s(std::size_t index, %s value) { %s_[index] = value; }' % (name, self._name, name))
         print('  void add_%s(%s value) { return %s_.push_back(value); }' % (name, self._name, name))
+
+    def print_building(self, name):
+        print('        std::string_view value_str = %s_Name(%s_);' % (self._name, name))
+        print('        argdata_t* value = argdata_create_str(value_str.data(), value_str.size());')
+        print('        argdata_store->StoreArgdata(value);')
 
     def print_code(self, declarations):
         print('enum %s {' % self._name)
@@ -500,6 +532,9 @@ class MessageDeclaration:
             r |= field.get_type().get_dependencies()
         return r
 
+    def get_isset_expression(self, name):
+        return 'has_%s_' % name
+
     def get_initializer(self, name):
         return 'has_%s_(false)' % name
 
@@ -523,6 +558,8 @@ class MessageDeclaration:
         print('  %s* mutable_%s(std::size_t index) { return &%s_[index]; }' % (self._name, name, name))
         print('  %s* add_%s() { return &%s_.emplace_back(); }' % (self._name, name, name))
 
+    def print_building(self, name):
+        print('        const argdata_t* value = %s_.Build(argdata_store);' % name)
 
     def print_code(self, declarations):
         print('class %s final : public arpc::Message {' % self._name)
@@ -554,8 +591,23 @@ class MessageDeclaration:
             print('    }')
         print('  }')
         print()
-        print('  const argdata_t* Build(arpc::ArgdataBuilder* argdata_builder) const override {')
-        print('    return &argdata_null;')
+        print('  const argdata_t* Build(arpc::ArgdataStore* argdata_store) const override {')
+        if self._fields:
+            print('    std::vector<const argdata_t*> *keys = argdata_store->GetVector();')
+            print('    std::vector<const argdata_t*> *values = argdata_store->GetVector();')
+            for field in sorted(self._fields, key=lambda field: field.get_name(False)):
+                print('      if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
+                print('        argdata_t* key = argdata_create_str("%s", %d);' % (field.get_name(False), len(field.get_name(False))))
+                print('        argdata_store->StoreArgdata(key);')
+                print('        keys->push_back(key);')
+                field.get_type().print_building(field.get_name(True), declarations)
+                print('        keys->push_back(value);')
+                print('      }')
+            print('      argdata_t* root = argdata_create_map(keys->data(), values->data(), keys->size());')
+            print('      argdata_store->StoreArgdata(root);')
+            print('      return root;')
+        else:
+            print('    return &argdata_null;')
         print('  }')
         print()
 
@@ -618,7 +670,7 @@ class ServiceRpcDeclaration:
             # TODO(ed): Properly serialize the response object!
             print('      arpc::Status status = %s(context, &request_object, &response_object);' % self._name)
             print('      if (status.ok())')
-            print('        *response = response_object.Build(argdata_builder);')
+            print('        *response = response_object.Build(argdata_store);')
             print('      return status;')
             print('    }')
 
@@ -685,7 +737,7 @@ class ServiceDeclaration:
         print('    return "%s";' % self._name)
         print('  }')
         print()
-        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser, const argdata_t** response, arpc::ArgdataBuilder* argdata_builder) override {')
+        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser, const argdata_t** response, arpc::ArgdataStore* argdata_store) override {')
         for rpc in self._rpcs:
             rpc.print_service_blocking_unary_call(declarations)
         print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')
