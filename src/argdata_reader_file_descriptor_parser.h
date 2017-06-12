@@ -24,13 +24,13 @@ class ArgdataReaderFileDescriptorParser : public arpc::FileDescriptorParser {
     using is_transparent = std::true_type;
 
     bool operator()(const std::shared_ptr<FileDescriptor>& a,
-                    const std::shared_ptr<FileDescriptor>& b) {
+                    const std::shared_ptr<FileDescriptor>& b) const {
       return a->get_fd() < b->get_fd();
     }
-    bool operator()(int a, const std::shared_ptr<FileDescriptor>& b) {
+    bool operator()(int a, const std::shared_ptr<FileDescriptor>& b) const {
       return a < b->get_fd();
     }
-    bool operator()(const std::shared_ptr<FileDescriptor>& a, int b) {
+    bool operator()(const std::shared_ptr<FileDescriptor>& a, int b) const {
       return a->get_fd() < b;
     }
   };
@@ -39,6 +39,6 @@ class ArgdataReaderFileDescriptorParser : public arpc::FileDescriptorParser {
   std::set<std::shared_ptr<FileDescriptor>, FileDescriptorComparator>
       file_descriptors_;
 };
-}
+}  // namespace arpc
 
 #endif
