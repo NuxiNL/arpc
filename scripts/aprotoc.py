@@ -599,7 +599,7 @@ class MessageDeclaration:
         print('  %s* add_%s() { return &%s_.emplace_back(); }' % (self._name, name, name))
 
     def print_building(self, name):
-        print('        const argdata_t* value = %s_.Build(argdata_builder);' % name)
+        print('        values.push_back(%s_.Build(argdata_builder));' % name)
 
     def print_code(self, declarations):
         print('class %s final : public arpc::Message {' % self._name)
