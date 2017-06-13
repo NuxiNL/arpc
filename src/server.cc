@@ -57,11 +57,9 @@ int Server::HandleRequest() {
 
     std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
     writer->set(server_message.Build(&argdata_builder));
-    int error = writer->push(fd_);
-    if (error != 0)
-      return error;
+    return writer->push(fd_);
   } else {
-    // TODO(ed): Implement streaming RPCs!
+    // Invalid operation.
+    return EOPNOTSUPP;
   }
-  return 0;
 }
