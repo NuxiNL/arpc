@@ -6,12 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_subdirectory(contrib/googletest-release-1.8.0/googletest)
+enable_testing()
+
 add_custom_command(OUTPUT arpc_protocol.h
 	COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto >${CMAKE_BINARY_DIR}/arpc_protocol.h
 	DEPENDS ${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto
 )
 
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR} ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 add_library(arpc
   arpc_protocol.h
@@ -24,6 +27,11 @@ add_library(arpc
 )
 target_link_libraries(arpc PUBLIC argdata)
 target_include_directories(arpc PUBLIC include)
+
+add_executable(arpc_tests
+  src/server_test.cc
+)
+target_link_libraries(arpc_tests arpc gtest_main)
 
 install(FILES scripts/aprotoc.py
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
