@@ -146,8 +146,21 @@ class Status {
 
 class RpcMethod {
  public:
-  RpcMethod(std::string_view service, std::string_view rpc) {
+  RpcMethod(std::string_view service, std::string_view rpc)
+      : service_(service), rpc_(rpc) {
   }
+
+  std::string_view GetService() const {
+    return service_;
+  }
+
+  std::string_view GetRpc() const {
+    return rpc_;
+  }
+
+ private:
+  std::string_view service_;
+  std::string_view rpc_;
 };
 
 class Service {
@@ -162,9 +175,17 @@ class Service {
 
 class Channel {
  public:
+  explicit Channel(int fd) : fd_(fd) {
+  }
+
   Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
                            const Message& request, Message* response);
+
+ private:
+  int fd_;
 };
+
+std::shared_ptr<Channel> CreateChannel(int fd);
 
 class ClientContext {};
 

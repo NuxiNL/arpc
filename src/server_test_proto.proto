@@ -1,0 +1,13 @@
+syntax = 'proto3';
+
+package server_test_proto;
+
+message Input {
+}
+
+message Output {
+}
+
+service Service {
+  rpc UnaryCall(Input) returns (Output);
+}
