@@ -5,11 +5,9 @@
 #include <arpc++/arpc++.h>
 #include <argdata.hpp>
 
-#include "argdata_reader_file_descriptor_parser.h"
-
 using namespace arpc;
 
-const argdata_t* ArgdataStore::CreateFileDescriptor(
+const argdata_t* ArgdataBuilder::BuildFileDescriptor(
     const std::shared_ptr<FileDescriptor>& value) {
   return argdatas_
       .emplace_back(
@@ -17,8 +15,8 @@ const argdata_t* ArgdataStore::CreateFileDescriptor(
       .get();
 }
 
-const argdata_t* ArgdataStore::CreateMap(std::vector<const argdata_t*> keys,
-                                         std::vector<const argdata_t*> values) {
+const argdata_t* ArgdataBuilder::BuildMap(
+    std::vector<const argdata_t*> keys, std::vector<const argdata_t*> values) {
   std::size_t size = keys.size();
   return argdatas_
       .emplace_back(argdata_create_map(
@@ -27,7 +25,7 @@ const argdata_t* ArgdataStore::CreateMap(std::vector<const argdata_t*> keys,
       .get();
 }
 
-const argdata_t* ArgdataStore::CreateString(std::string_view value) {
+const argdata_t* ArgdataBuilder::BuildString(std::string_view value) {
   std::size_t size = value.size();
   return argdatas_
       .emplace_back(

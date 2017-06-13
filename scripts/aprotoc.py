@@ -156,13 +156,13 @@ class StringType(StringlikeType):
     grammar = ['string']
 
     def print_building(self, name, declarations):
-        print('        values.push_back(argdata_store->CreateString(%s_));' % name)
+        print('        values.push_back(argdata_builder->BuildString(%s_));' % name)
 
     def print_building_map_key(self):
-        print('          mapkeys.push_back(argdata_store->CreateString(mapentry.first));')
+        print('          mapkeys.push_back(argdata_builder->BuildString(mapentry.first));')
 
     def print_building_map_value(self, declarations):
-        print('          mapvalues.push_back(argdata_store->CreateString(mapentry.second));')
+        print('          mapvalues.push_back(argdata_builder->BuildString(mapentry.second));')
 
     def print_parsing(self, name, declarations):
         print('        const char* valuestr;');
@@ -228,25 +228,54 @@ class FileDescriptorType:
         print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
 
     def print_building(self, name, declarations):
-        print('        values.push_back(argdata_store->CreateFileDescriptor(%s_));' % name)
+        print('        values.push_back(argdata_builder->BuildFileDescriptor(%s_));' % name)
 
     def print_fields(self, name, declarations):
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
 
     def print_parsing(self, name, declarations):
-        print('        std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*value);')
+        print('        std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*value);')
         print('        if (fd)')
         print('          %s_ = std::move(fd);' % name)
 
     def print_parsing_map_value(self, name, declarations):
-        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*key2);')
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*key2);')
         print('          if (fd)')
         print('            %s_.emplace(mapkey, nullptr).first->second = std::move(fd);' % name)
 
     def print_parsing_repeated(self, name, declarations):
-        print('          std::shared_ptr<arpc::FileDescriptor> fd = file_descriptor_parser->Parse(*element);')
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*element);')
         print('          if (fd)')
         print('            %s_.emplace_back(std::move(fd));' % name)
+
+
+class AnyType:
+
+    grammar = ['google.protobuf.Any']
+
+    def get_dependencies(self):
+        return set()
+
+    def get_initializer(self, name, declarations):
+        return '%s_(nullptr)' % name
+
+    def get_isset_expression(self, name, declarations):
+        return '%s_ != nullptr' % name
+
+    def print_accessors(self, name, declarations):
+        print('  bool has_%s() const { return %s_ != nullptr; }' % (name, name))
+        print('  const argdata_t* %s() const { return %s_ == nullptr ? &argdata_null : %s_; }' % (name, name, name))
+        print('  void set_%s(const argdata_t* value) { %s_ = value; }' % (name, name))
+        print('  void clear_%s() { %s_ = nullptr; }' % (name, name))
+
+    def print_building(self, name, declarations):
+        print('        values.push_back(%s_);' % name)
+
+    def print_fields(self, name, declarations):
+        print('  const argdata_t* %s_;' % name)
+
+    def print_parsing(self, name, declarations):
+        print('        %s_ = argdata_parser->ParseAnyFromMap(it);' % name)
 
 
 class ReferenceType:
@@ -303,6 +332,7 @@ PrimitiveType = [
     StringType,
     BytesType,
     FileDescriptorType,
+    AnyType,
     ReferenceType,
 ]
 
@@ -347,7 +377,7 @@ class MapType:
         self._key_type.print_building_map_key()
         self._value_type.print_building_map_value(declarations)
         print('        }')
-        print('        values.push_back(argdata_store->CreateMap(std::move(mapkeys), std::move(mapvalues)));')
+        print('        values.push_back(argdata_builder->BuildMap(std::move(mapkeys), std::move(mapvalues)));')
 
     def print_fields(self, name, declarations):
         print('  %s %s_;' % (self.get_storage_type(declarations), name))
@@ -454,7 +484,7 @@ class EnumDeclaration:
         print('  void add_%s(%s value) { return %s_.push_back(value); }' % (name, self._name, name))
 
     def print_building(self, name):
-        print('        values.push_back(argdata_store->CreateString(%s_Name(%s_)));' % (self._name, name))
+        print('        values.push_back(argdata_builder->BuildString(%s_Name(%s_)));' % (self._name, name))
 
     def print_code(self, declarations):
         print('enum %s {' % self._name)
@@ -569,7 +599,7 @@ class MessageDeclaration:
         print('  %s* add_%s() { return &%s_.emplace_back(); }' % (self._name, name, name))
 
     def print_building(self, name):
-        print('        const argdata_t* value = %s_.Build(argdata_store);' % name)
+        print('        const argdata_t* value = %s_.Build(argdata_builder);' % name)
 
     def print_code(self, declarations):
         print('class %s final : public arpc::Message {' % self._name)
@@ -580,7 +610,7 @@ class MessageDeclaration:
         if initializers:
             print('  %s() : %s {}' % (self._name, ', '.join(initializers)))
             print()
-        print('  void Parse(const argdata_t& ad, arpc::FileDescriptorParser* file_descriptor_parser) override {')
+        print('  void Parse(const argdata_t& ad, arpc::ArgdataParser* argdata_parser) override {')
         if self._fields:
             print('    argdata_map_iterator_t it;')
             print('    argdata_map_iterate(&ad, &it);')
@@ -601,16 +631,16 @@ class MessageDeclaration:
             print('    }')
         print('  }')
         print()
-        print('  const argdata_t* Build(arpc::ArgdataStore* argdata_store) const override {')
+        print('  const argdata_t* Build(arpc::ArgdataBuilder* argdata_builder) const override {')
         if self._fields:
             print('    std::vector<const argdata_t*> keys;')
             print('    std::vector<const argdata_t*> values;')
             for field in sorted(self._fields, key=lambda field: field.get_name(False)):
                 print('      if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
-                print('        keys.push_back(argdata_store->CreateString("%s"));' % field.get_name(False))
+                print('        keys.push_back(argdata_builder->BuildString("%s"));' % field.get_name(False))
                 field.get_type().print_building(field.get_name(True), declarations)
                 print('      }')
-            print('      return argdata_store->CreateMap(std::move(keys), std::move(values));')
+            print('      return argdata_builder->BuildMap(std::move(keys), std::move(values));')
         else:
             print('    return &argdata_null;')
         print('  }')
@@ -632,13 +662,13 @@ class MessageDeclaration:
 
     def print_parsing(self, name):
         print('        has_%s_ = true;' % name)
-        print('        %s_.Parse(*value, file_descriptor_parser);' % name)
+        print('        %s_.Parse(*value, argdata_parser);' % name)
 
     def print_parsing_map_value(self, name):
-        print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2, file_descriptor_parser);' % (name, self._name))
+        print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2, argdata_parser);' % (name, self._name))
 
     def print_parsing_repeated(self, name):
-        print('          %s_.emplace_back().Parse(*element, file_descriptor_parser);' % name)
+        print('          %s_.emplace_back().Parse(*element, argdata_parser);' % name)
 
 
 class ServiceRpcDeclaration:
@@ -670,12 +700,11 @@ class ServiceRpcDeclaration:
         if not self._argument_type.is_stream() and not self._return_type.is_stream():
             print('    if (rpc == "%s") {' % self._name)
             print('      %s request_object;' % self._argument_type.get_storage_type(declarations))
-            print('      request_object.Parse(request, file_descriptor_parser);')
+            print('      request_object.Parse(request, argdata_parser);')
             print('      %s response_object;' % self._return_type.get_storage_type(declarations))
-            # TODO(ed): Properly serialize the response object!
             print('      arpc::Status status = %s(context, &request_object, &response_object);' % self._name)
             print('      if (status.ok())')
-            print('        *response = response_object.Build(argdata_store);')
+            print('        *response = response_object.Build(argdata_builder);')
             print('      return status;')
             print('    }')
 
@@ -742,7 +771,7 @@ class ServiceDeclaration:
         print('    return "%s";' % self._name)
         print('  }')
         print()
-        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::FileDescriptorParser* file_descriptor_parser, const argdata_t** response, arpc::ArgdataStore* argdata_store) override {')
+        print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::ArgdataParser* argdata_parser, const argdata_t** response, arpc::ArgdataBuilder* argdata_builder) override {')
         for rpc in self._rpcs:
             rpc.print_service_blocking_unary_call(declarations)
         print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')

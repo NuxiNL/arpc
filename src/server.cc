@@ -3,7 +3,6 @@
 #include <arpc++/arpc++.h>
 #include <argdata.hpp>
 
-#include "argdata_reader_file_descriptor_parser.h"
 #include "arpc_protocol.h"
 
 using namespace arpc;
@@ -19,12 +18,12 @@ int Server::HandleRequest() {
   }
 
   // Parse the received message.
-  ArgdataReaderFileDescriptorParser file_descriptor_parser(reader.get());
+  ArgdataParser argdata_parser(reader.get());
   arpc_protocol::ClientMessage client_message;
-  client_message.Parse(*reader->get(), &file_descriptor_parser);
+  client_message.Parse(*reader->get(), &argdata_parser);
 
   if (client_message.has_unary_request()) {
-    // Simple unary call. Dispatch the right service.
+    // Simple unary call.
     const arpc_protocol::UnaryRequest& unary_request =
         client_message.unary_request();
     const arpc_protocol::RpcMethod& rpc_method = unary_request.rpc_method();
@@ -32,6 +31,8 @@ int Server::HandleRequest() {
     arpc_protocol::UnaryResponse* unary_response =
         server_message.mutable_unary_response();
 
+    // Find corresponding service.
+    ArgdataBuilder argdata_builder;
     auto service = services_.find(rpc_method.service());
     if (service == services_.end()) {
       // Service not found.
@@ -42,16 +43,20 @@ int Server::HandleRequest() {
       // Service found. Invoke call.
       ServerContext context;
       const argdata_t* response = argdata_t::null();
-      ArgdataStore argdata_store;
       Status rpc_status = service->second->BlockingUnaryCall(
-          rpc_method.rpc(), &context, *argdata_t::null(),
-          &file_descriptor_parser, &response, &argdata_store);
+          rpc_method.rpc(), &context, *unary_request.request(), &argdata_parser,
+          &response, &argdata_builder);
       arpc_protocol::Status* status = unary_response->mutable_status();
       status->set_code(arpc_protocol::StatusCode(rpc_status.error_code()));
       status->set_message(rpc_status.error_message());
-      // TODO(ed): Set response body!
+      unary_response->set_response(response);
     }
-    // TODO(ed): Set response!
+
+    std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
+    writer->set(server_message.Build(&argdata_builder));
+    int error = writer->push(fd_);
+    if (error != 0)
+      return error;
   } else {
     // TODO(ed): Implement streaming RPCs!
   }

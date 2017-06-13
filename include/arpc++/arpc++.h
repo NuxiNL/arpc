@@ -6,8 +6,10 @@
 #include <forward_list>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #include <argdata.hpp>
 
@@ -38,21 +40,45 @@ class FileDescriptor {
   int fd_;
 };
 
-class FileDescriptorParser {
+class ArgdataParser {
  public:
-  virtual ~FileDescriptorParser() {
-  }
+  ArgdataParser(argdata_reader_t* reader);
+  ~ArgdataParser();
 
-  virtual std::shared_ptr<FileDescriptor> Parse(const argdata_t& ad) = 0;
+  const argdata_t* ParseAnyFromMap(const argdata_map_iterator_t& it);
+  std::shared_ptr<FileDescriptor> ParseFileDescriptor(const argdata_t& ad);
+
+ private:
+  // Comparator for finding file descriptors in a set of shared pointers
+  // to FileDescriptor objects.
+  class FileDescriptorComparator {
+   public:
+    using is_transparent = std::true_type;
+
+    bool operator()(const std::shared_ptr<FileDescriptor>& a,
+                    const std::shared_ptr<FileDescriptor>& b) const {
+      return a->get_fd() < b->get_fd();
+    }
+    bool operator()(int a, const std::shared_ptr<FileDescriptor>& b) const {
+      return a < b->get_fd();
+    }
+    bool operator()(const std::shared_ptr<FileDescriptor>& a, int b) const {
+      return a->get_fd() < b;
+    }
+  };
+
+  argdata_reader_t* const reader_;
+  std::set<std::shared_ptr<FileDescriptor>, FileDescriptorComparator>
+      file_descriptors_;
 };
 
-class ArgdataStore {
+class ArgdataBuilder {
  public:
-  const argdata_t* CreateFileDescriptor(
+  const argdata_t* BuildFileDescriptor(
       const std::shared_ptr<FileDescriptor>& value);
-  const argdata_t* CreateMap(std::vector<const argdata_t*> keys,
-                             std::vector<const argdata_t*> values);
-  const argdata_t* CreateString(std::string_view value);
+  const argdata_t* BuildMap(std::vector<const argdata_t*> keys,
+                            std::vector<const argdata_t*> values);
+  const argdata_t* BuildString(std::string_view value);
 
  private:
   std::vector<std::unique_ptr<argdata_t>> argdatas_;
@@ -66,9 +92,8 @@ class Message {
   virtual ~Message() {
   }
 
-  virtual void Parse(const argdata_t& ad,
-                     FileDescriptorParser* file_descriptor_parser) = 0;
-  virtual const argdata_t* Build(ArgdataStore* argdata_store) const = 0;
+  virtual void Parse(const argdata_t& ad, ArgdataParser* argdata_parser) = 0;
+  virtual const argdata_t* Build(ArgdataBuilder* argdata_builder) const = 0;
 };
 
 enum class StatusCode {
@@ -130,9 +155,9 @@ class Service {
   virtual std::string_view GetName() = 0;
   virtual Status BlockingUnaryCall(std::string_view rpc, ServerContext* context,
                                    const argdata_t& request,
-                                   FileDescriptorParser* file_descriptor_parser,
+                                   ArgdataParser* argdata_parser,
                                    const argdata_t** response,
-                                   ArgdataStore* argdata_store) = 0;
+                                   ArgdataBuilder* argdata_builder) = 0;
 };
 
 class Channel {
