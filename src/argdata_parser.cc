@@ -15,6 +15,12 @@ ArgdataParser::~ArgdataParser() {
     argdata_reader_release_fd(reader_, file_descriptor->get_fd());
 }
 
+const argdata_t* ArgdataParser::ParseAnyFromMap(
+    const argdata_map_iterator_t& it) {
+  // TODO(ed): Implement!
+  return &argdata_null;
+}
+
 std::shared_ptr<FileDescriptor> ArgdataParser::ParseFileDescriptor(
     const argdata_t& ad) {
   // Parse file descriptor object.
