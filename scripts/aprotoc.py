@@ -156,13 +156,13 @@ class StringType(StringlikeType):
     grammar = ['string']
 
     def print_building(self, name, declarations):
-        print('        values.push_back(argdata_builder->BuildString(%s_));' % name)
+        print('      values.push_back(argdata_builder->BuildString(%s_));' % name)
 
     def print_building_map_key(self):
-        print('          mapkeys.push_back(argdata_builder->BuildString(mapentry.first));')
+        print('        mapkeys.push_back(argdata_builder->BuildString(mapentry.first));')
 
     def print_building_map_value(self, declarations):
-        print('          mapvalues.push_back(argdata_builder->BuildString(mapentry.second));')
+        print('        mapvalues.push_back(argdata_builder->BuildString(mapentry.second));')
 
     def print_parsing(self, name, declarations):
         print('        const char* valuestr;');
@@ -228,7 +228,7 @@ class FileDescriptorType:
         print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
 
     def print_building(self, name, declarations):
-        print('        values.push_back(argdata_builder->BuildFileDescriptor(%s_));' % name)
+        print('      values.push_back(argdata_builder->BuildFileDescriptor(%s_));' % name)
 
     def print_fields(self, name, declarations):
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
@@ -269,7 +269,7 @@ class AnyType:
         print('  void clear_%s() { %s_ = nullptr; }' % (name, name))
 
     def print_building(self, name, declarations):
-        print('        values.push_back(%s_);' % name)
+        print('      values.push_back(%s_);' % name)
 
     def print_fields(self, name, declarations):
         print('  const argdata_t* %s_;' % name)
@@ -484,7 +484,7 @@ class EnumDeclaration:
         print('  void add_%s(%s value) { return %s_.push_back(value); }' % (name, self._name, name))
 
     def print_building(self, name):
-        print('        values.push_back(argdata_builder->BuildString(%s_Name(%s_)));' % (self._name, name))
+        print('      values.push_back(argdata_builder->BuildString(%s_Name(%s_)));' % (self._name, name))
 
     def print_code(self, declarations):
         print('enum %s {' % self._name)
@@ -599,7 +599,7 @@ class MessageDeclaration:
         print('  %s* add_%s() { return &%s_.emplace_back(); }' % (self._name, name, name))
 
     def print_building(self, name):
-        print('        values.push_back(%s_.Build(argdata_builder));' % name)
+        print('      values.push_back(%s_.Build(argdata_builder));' % name)
 
     def print_code(self, declarations):
         print('class %s final : public arpc::Message {' % self._name)
@@ -636,11 +636,11 @@ class MessageDeclaration:
             print('    std::vector<const argdata_t*> keys;')
             print('    std::vector<const argdata_t*> values;')
             for field in sorted(self._fields, key=lambda field: field.get_name(False)):
-                print('      if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
-                print('        keys.push_back(argdata_builder->BuildString("%s"));' % field.get_name(False))
+                print('    if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
+                print('      keys.push_back(argdata_builder->BuildString("%s"));' % field.get_name(False))
                 field.get_type().print_building(field.get_name(True), declarations)
-                print('      }')
-            print('      return argdata_builder->BuildMap(std::move(keys), std::move(values));')
+                print('    }')
+            print('    return argdata_builder->BuildMap(std::move(keys), std::move(values));')
         else:
             print('    return &argdata_null;')
         print('  }')
