@@ -49,7 +49,7 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
         server_message.unary_response();
     response->Parse(*unary_response.response(), &argdata_parser);
     const arpc_protocol::Status& status = unary_response.status();
-    return Status(arpc::StatusCode(status.code()), status.message());
+    return Status(StatusCode(status.code()), status.message());
   }
 }
 
