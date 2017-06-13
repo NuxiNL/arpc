@@ -8,19 +8,22 @@
 using namespace arpc;
 
 int Server::HandleRequest() {
-  // Read the next message from the socket.
-  // TODO(ed): Make configurable!
+  // Read the next message from the socket. Return end-of-file as -1.
+  // TODO(ed): Make buffer size configurable!
   std::unique_ptr<argdata_reader_t> reader = argdata_reader_t::create(4096, 16);
   {
     int error = reader->pull(fd_);
     if (error != 0)
       return error;
   }
+  const argdata_t* input = reader->get();
+  if (input == nullptr)
+    return -1;
 
   // Parse the received message.
   ArgdataParser argdata_parser(reader.get());
   arpc_protocol::ClientMessage client_message;
-  client_message.Parse(*reader->get(), &argdata_parser);
+  client_message.Parse(*input, &argdata_parser);
 
   if (client_message.has_unary_request()) {
     // Simple unary call.
