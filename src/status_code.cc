@@ -7,11 +7,9 @@ using namespace arpc;
 // StatusCode is an enumeration that is declared in public headers, but
 // depends on status code constants that are part of arpc_protocol.proto.
 // Add static assertions to ensure these remain in sync.
-static_assert(int(StatusCode::UNKNOWN) ==
-                  arpc_protocol::StatusCode::UNKNOWN,
+static_assert(int(StatusCode::UNKNOWN) == arpc_protocol::StatusCode::UNKNOWN,
               "Status codes must match at the message and API level.");
-static_assert(int(StatusCode::ABORTED) ==
-                  arpc_protocol::StatusCode::ABORTED,
+static_assert(int(StatusCode::ABORTED) == arpc_protocol::StatusCode::ABORTED,
               "Status codes must match at the message and API level.");
 static_assert(int(StatusCode::ALREADY_EXISTS) ==
                   arpc_protocol::StatusCode::ALREADY_EXISTS,
@@ -28,8 +26,7 @@ static_assert(int(StatusCode::DEADLINE_EXCEEDED) ==
 static_assert(int(StatusCode::FAILED_PRECONDITION) ==
                   arpc_protocol::StatusCode::FAILED_PRECONDITION,
               "Status codes must match at the message and API level.");
-static_assert(int(StatusCode::INTERNAL) ==
-                  arpc_protocol::StatusCode::INTERNAL,
+static_assert(int(StatusCode::INTERNAL) == arpc_protocol::StatusCode::INTERNAL,
               "Status codes must match at the message and API level.");
 static_assert(int(StatusCode::INVALID_ARGUMENT) ==
                   arpc_protocol::StatusCode::INVALID_ARGUMENT,
