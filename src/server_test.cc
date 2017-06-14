@@ -56,12 +56,12 @@ TEST(Server, ServiceNotRegistered) {
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
   std::shared_ptr<arpc::Channel> channel =
       arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
-  std::unique_ptr<server_test_proto::Service::Stub> stub =
-      server_test_proto::Service::NewStub(channel);
+  std::unique_ptr<server_test_proto::UnaryService::Stub> stub =
+      server_test_proto::UnaryService::NewStub(channel);
   std::thread caller([&stub]() {
     arpc::ClientContext context;
-    server_test_proto::Input input;
-    server_test_proto::Output output;
+    server_test_proto::UnaryInput input;
+    server_test_proto::UnaryOutput output;
     arpc::Status status = stub->UnaryCall(&context, input, &output);
     EXPECT_EQ(arpc::StatusCode::UNIMPLEMENTED, status.error_code());
     EXPECT_EQ("Service not registered", status.error_message());
@@ -74,11 +74,11 @@ TEST(Server, ServiceNotRegistered) {
 
 // Simple service that does nothing more than echoing responses.
 namespace {
-class EchoService final : public server_test_proto::Service::Service {
+class EchoService final : public server_test_proto::UnaryService::Service {
  public:
   arpc::Status UnaryCall(arpc::ServerContext* context,
-                         const server_test_proto::Input* request,
-                         server_test_proto::Output* response) {
+                         const server_test_proto::UnaryInput* request,
+                         server_test_proto::UnaryOutput* response) {
     response->set_text(request->text());
     response->set_file_descriptor(request->file_descriptor());
     return arpc::Status::OK;
@@ -93,12 +93,12 @@ TEST(Server, UnaryEcho) {
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
   std::shared_ptr<arpc::Channel> channel =
       arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
-  std::unique_ptr<server_test_proto::Service::Stub> stub =
-      server_test_proto::Service::NewStub(channel);
+  std::unique_ptr<server_test_proto::UnaryService::Stub> stub =
+      server_test_proto::UnaryService::NewStub(channel);
   std::thread caller([&stub]() {
     arpc::ClientContext context;
-    server_test_proto::Input input;
-    server_test_proto::Output output;
+    server_test_proto::UnaryInput input;
+    server_test_proto::UnaryOutput output;
 
     input.set_text("Hello, world!");
     EXPECT_TRUE(stub->UnaryCall(&context, input, &output).ok());
@@ -125,12 +125,12 @@ TEST(Server, UnaryFileDesciptorPassing) {
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
   std::shared_ptr<arpc::Channel> channel =
       arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
-  std::unique_ptr<server_test_proto::Service::Stub> stub =
-      server_test_proto::Service::NewStub(channel);
+  std::unique_ptr<server_test_proto::UnaryService::Stub> stub =
+      server_test_proto::UnaryService::NewStub(channel);
   std::thread caller([&stub]() {
     arpc::ClientContext context;
-    server_test_proto::Input input;
-    server_test_proto::Output output;
+    server_test_proto::UnaryInput input;
+    server_test_proto::UnaryOutput output;
 
     // Write something into the pipe and send the read side to the
     // EchoService.

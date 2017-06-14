@@ -2,16 +2,16 @@ syntax = 'proto3';
 
 package server_test_proto;
 
-message Input {
+message UnaryInput {
   string text = 1;
   fd file_descriptor = 2;
 }
 
-message Output {
+message UnaryOutput {
   string text = 1;
   fd file_descriptor = 2;
 }
 
-service Service {
-  rpc UnaryCall(Input) returns (Output);
+service UnaryService {
+  rpc UnaryCall(UnaryInput) returns (UnaryOutput);
 }
