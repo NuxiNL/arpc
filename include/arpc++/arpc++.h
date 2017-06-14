@@ -341,15 +341,36 @@ class ServerContext {
   bool IsCancelled() const;
 };
 
+class ServerReaderImpl {
+ public:
+  bool Read(Message* msg);
+};
+
 template <typename R>
-class ServerReader {};
+class ServerReader {
+ public:
+  bool Read(R* msg) {
+    return impl_.Read(msg);
+  }
+
+ private:
+  ServerReaderImpl impl_;
+};
+
+class ServerWriterImpl {
+ public:
+  bool Write(const Message& msg);
+};
 
 template <typename W>
 class ServerWriter {
  public:
   bool Write(const W& msg) {
-    // TODO: implement
+    return impl_.Write(msg);
   }
+
+ private:
+  ServerWriterImpl impl_;
 };
 
 template <typename W, typename R>
