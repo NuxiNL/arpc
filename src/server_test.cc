@@ -83,3 +83,49 @@ TEST(Server, ServiceNotRegistered) {
   EXPECT_EQ(0, close(fds[0]));
   EXPECT_EQ(0, close(fds[1]));
 }
+
+// Simple service that does nothing more than echoing responses.
+namespace {
+class EchoService final : public server_test_proto::Service::Service {
+ public:
+  arpc::Status UnaryCall(arpc::ServerContext* context,
+                         const server_test_proto::Input* request,
+                         server_test_proto::Output* response) {
+    response->set_text(request->text());
+    return arpc::Status::OK;
+  }
+};
+}
+
+TEST(Server, UnaryEcho) {
+  // Invoke RPCs on the EchoService and check whether the input text
+  // properly ends up in the output.
+  int fds[2];
+  EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
+  std::shared_ptr<arpc::Channel> channel = arpc::CreateChannel(fds[0]);
+  std::unique_ptr<server_test_proto::Service::Stub> stub =
+      server_test_proto::Service::NewStub(channel);
+  std::thread caller([&stub]() {
+    arpc::ClientContext context;
+    server_test_proto::Input input;
+    server_test_proto::Output output;
+
+    input.set_text("Hello, world!");
+    ASSERT_TRUE(stub->UnaryCall(&context, input, &output).ok());
+    ASSERT_EQ("Hello, world!", output.text());
+
+    input.set_text("Goodbye, world!");
+    ASSERT_TRUE(stub->UnaryCall(&context, input, &output).ok());
+    ASSERT_EQ("Goodbye, world!", output.text());
+  });
+
+  arpc::ServerBuilder builder(fds[1]);
+  EchoService service;
+  builder.RegisterService(&service);
+  EXPECT_EQ(0, builder.Build()->HandleRequest());
+  EXPECT_EQ(0, builder.Build()->HandleRequest());
+  caller.join();
+
+  EXPECT_EQ(0, close(fds[0]));
+  EXPECT_EQ(0, close(fds[1]));
+}

@@ -3,9 +3,11 @@ syntax = 'proto3';
 package server_test_proto;
 
 message Input {
+  string text = 1;
 }
 
 message Output {
+  string text = 1;
 }
 
 service Service {

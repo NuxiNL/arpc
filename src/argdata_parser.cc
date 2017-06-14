@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include <argdata.h>
 #include <arpc++/arpc++.h>
 
@@ -17,8 +19,10 @@ ArgdataParser::~ArgdataParser() {
 
 const argdata_t* ArgdataParser::ParseAnyFromMap(
     const argdata_map_iterator_t& it) {
-  // TODO(ed): Implement!
-  return &argdata_null;
+  const argdata_t *key, *value;
+  if (!argdata_map_get(&maps_.emplace_front(it), &key, &value))
+    std::abort();
+  return value;
 }
 
 std::shared_ptr<FileDescriptor> ArgdataParser::ParseFileDescriptor(

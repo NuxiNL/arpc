@@ -27,6 +27,7 @@ add_library(arpc
   src/channel.cc
   src/server.cc
   src/server_context.cc
+  src/status.cc
   src/status_code.cc
 )
 target_link_libraries(arpc PUBLIC argdata)

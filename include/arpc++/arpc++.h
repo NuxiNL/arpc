@@ -70,6 +70,7 @@ class ArgdataParser {
   argdata_reader_t* const reader_;
   std::set<std::shared_ptr<FileDescriptor>, FileDescriptorComparator>
       file_descriptors_;
+  std::forward_list<argdata_map_iterator_t> maps_;
 };
 
 class ArgdataBuilder {
@@ -138,6 +139,8 @@ class Status {
   bool ok() const {
     return code_ == StatusCode::OK;
   }
+
+  static const Status OK;
 
  private:
   const StatusCode code_;

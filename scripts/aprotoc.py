@@ -48,17 +48,16 @@ class IntegerType(NumericType):
         return 'std::%s_t' % self._name
 
     def print_parsing(self, name, declarations):
-        print('        argdata_get_int(value, &%s_);' % name)
+        print('          argdata_get_int(value, &%s_);' % name)
 
     def print_parsing_map_key(self):
         print('          std::%s_t mapkey;' % self._name)
-        print('          if (argdata_get_int(value2, &mapkey) != 0)')
-        print('            continue;')
+        print('          if (argdata_get_int(value2, &mapkey) == 0) {')
 
     def print_parsing_map_value(self, name, declarations):
-        print('          std::%s_t key2int;' % self._name);
-        print('          if (argdata_get_int(key2, &key2int) == 0)')
-        print('            %s_.emplace(mapkey, 0).first->second = key2int;' % name)
+        print('            std::%s_t key2int;' % self._name);
+        print('            if (argdata_get_int(key2, &key2int) == 0)')
+        print('              %s_.emplace(mapkey, 0).first->second = key2int;' % name)
 
     def print_parsing_repeated(self, name, declarations):
         print('          std::%s_t elementint;' % self._name)
@@ -109,7 +108,7 @@ class FloatingPointType(NumericType):
         return 'double'
 
     def print_parsing(self, name, declarations):
-        print('          argdata_get_float(value, &%s_);' % name)
+        print('            argdata_get_float(value, &%s_);' % name)
 
 
 class BooleanType(NumericType):
@@ -123,7 +122,7 @@ class BooleanType(NumericType):
         return 'bool'
 
     def print_parsing(self, name, declarations):
-        print('        argdata_get_bool(value, &%s_);' % name)
+        print('          argdata_get_bool(value, &%s_);' % name)
 
 
 class StringlikeType(ScalarType):
@@ -165,23 +164,22 @@ class StringType(StringlikeType):
         print('        mapvalues.push_back(argdata_builder->BuildString(mapentry.second));')
 
     def print_parsing(self, name, declarations):
-        print('        const char* valuestr;');
-        print('        std::size_t valuelen;');
-        print('        if (argdata_get_str(value, &valuestr, &valuelen) == 0)')
-        print('          %s_ = std::string_view(valuestr, valuelen);' % name)
+        print('          const char* valuestr;');
+        print('          std::size_t valuelen;');
+        print('          if (argdata_get_str(value, &valuestr, &valuelen) == 0)')
+        print('            %s_ = std::string_view(valuestr, valuelen);' % name)
 
     def print_parsing_map_key(self):
-        print('          const char* value2str;');
-        print('          std::size_t value2len;');
-        print('          if (argdata_get_str(value2, &value2str, &value2len) != 0)')
-        print('            continue;')
-        print('          std::string_view mapkey(value2str, value2len);')
+        print('            const char* value2str;');
+        print('            std::size_t value2len;');
+        print('            if (argdata_get_str(value2, &value2str, &value2len) == 0) {')
+        print('              std::string_view mapkey(value2str, value2len);')
 
     def print_parsing_map_value(self, name, declarations):
-        print('          const char* key2str;');
-        print('          std::size_t key2len;');
-        print('          if (argdata_get_str(key2, &key2str, &key2len) == 0)')
-        print('            %s_.emplace(mapkey, std::string()).first->second = std::string_view(key2str, key2len);' % name)
+        print('              const char* key2str;');
+        print('              std::size_t key2len;');
+        print('              if (argdata_get_str(key2, &key2str, &key2len) == 0)')
+        print('                %s_.emplace(mapkey, std::string()).first->second = std::string_view(key2str, key2len);' % name)
 
     def print_parsing_repeated(self, name, declarations):
         print('          const char* elementstr;');
@@ -195,10 +193,10 @@ class BytesType(StringlikeType):
     grammar = ['bytes']
 
     def print_parsing(self, name, declarations):
-        print('        const void* valuestr;');
-        print('        std::size_t valuelen;');
-        print('        if (argdata_get_binary(value, &valuestr, &valuelen) == 0)')
-        print('          %s_ = std::string_view(static_cast<const char*>(valuestr), valuelen);' % name)
+        print('          const void* valuestr;');
+        print('          std::size_t valuelen;');
+        print('          if (argdata_get_binary(value, &valuestr, &valuelen) == 0)')
+        print('            %s_ = std::string_view(static_cast<const char*>(valuestr), valuelen);' % name)
 
 
 class FileDescriptorType:
@@ -234,9 +232,9 @@ class FileDescriptorType:
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
 
     def print_parsing(self, name, declarations):
-        print('        std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*value);')
-        print('        if (fd)')
-        print('          %s_ = std::move(fd);' % name)
+        print('          std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*value);')
+        print('          if (fd)')
+        print('            %s_ = std::move(fd);' % name)
 
     def print_parsing_map_value(self, name, declarations):
         print('          std::shared_ptr<arpc::FileDescriptor> fd = argdata_parser->ParseFileDescriptor(*key2);')
@@ -275,7 +273,7 @@ class AnyType:
         print('  const argdata_t* %s_;' % name)
 
     def print_parsing(self, name, declarations):
-        print('        %s_ = argdata_parser->ParseAnyFromMap(it);' % name)
+        print('          %s_ = argdata_parser->ParseAnyFromMap(it);' % name)
 
 
 class ReferenceType:
@@ -371,25 +369,27 @@ class MapType:
         print('  %s* mutable_%s() { return &%s_; }' % (self.get_storage_type(declarations), name, name))
 
     def print_building(self, name, declarations):
-        print('        std::vector<const argdata_t*> mapkeys;')
-        print('        std::vector<const argdata_t*> mapvalues;')
-        print('        for (const auto& mapentry : %s_) {' % name)
+        print('      std::vector<const argdata_t*> mapkeys;')
+        print('      std::vector<const argdata_t*> mapvalues;')
+        print('      for (const auto& mapentry : %s_) {' % name)
         self._key_type.print_building_map_key()
         self._value_type.print_building_map_value(declarations)
-        print('        }')
-        print('        values.push_back(argdata_builder->BuildMap(std::move(mapkeys), std::move(mapvalues)));')
+        print('      }')
+        print('      values.push_back(argdata_builder->BuildMap(std::move(mapkeys), std::move(mapvalues)));')
 
     def print_fields(self, name, declarations):
         print('  %s %s_;' % (self.get_storage_type(declarations), name))
 
     def print_parsing(self, name, declarations):
-        print('        argdata_map_iterator_t it2;')
-        print('        argdata_map_iterate(value, &it2);')
-        print('        const argdata_t* key2, *value2;')
-        print('        while (argdata_map_next(&it2, &key2, &value2)) {')
+        print('          argdata_map_iterator_t it2;')
+        print('          argdata_map_iterate(value, &it2);')
+        print('          const argdata_t* key2, *value2;')
+        print('          while (argdata_map_get(&it2, &key2, &value2)) {')
         self._key_type.print_parsing_map_key()
         self._value_type.print_parsing_map_value(name, declarations)
-        print('        }')
+        print('            }')
+        print('            argdata_map_next(&it2);')
+        print('          }')
 
 
 class RepeatedType:
@@ -419,12 +419,12 @@ class RepeatedType:
         print('  %s %s_;' % (self.get_storage_type(declarations), name))
 
     def print_parsing(self, name, declarations):
-        print('        argdata_seq_iterator_t it2;')
-        print('        argdata_seq_iterate(value, &it2);')
-        print('        const argdata_t* element;')
-        print('        while (argdata_seq_next(&it2, &element)) {')
+        print('          argdata_seq_iterator_t it2;')
+        print('          argdata_seq_iterate(value, &it2);')
+        print('          const argdata_t* element;')
+        print('          while (argdata_seq_next(&it2, &element)) {')
         self._type.print_parsing_repeated(name, declarations)
-        print('        }')
+        print('          }')
 
 
 class StreamType:
@@ -517,10 +517,10 @@ class EnumDeclaration:
         print('  %s %s_;' % (self._name, name))
 
     def print_parsing(self, name):
-        print('        const char* enumstr;')
-        print('        std::size_t enumlen;')
-        print('        if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
-        print('          %s_Parse(std::string_view(enumstr, enumlen), &%s_);' % (self._name, name))
+        print('          const char* enumstr;')
+        print('          std::size_t enumlen;')
+        print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
+        print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_);' % (self._name, name))
 
     def print_parsing_map_value(self, name):
         print('          const char* enumstr;')
@@ -616,18 +616,19 @@ class MessageDeclaration:
             print('    argdata_map_iterate(&ad, &it);')
             print('    const argdata_t* key;')
             print('    const argdata_t* value;')
-            print('    while (argdata_map_next(&it, &key, &value)) {')
+            print('    while (argdata_map_get(&it, &key, &value)) {')
             print('      const char* keystr;')
             print('      std::size_t keylen;')
-            print('      if (argdata_get_str(key, &keystr, &keylen) != 0)')
-            print('        continue;')
-            print('      std::string_view keyss(keystr, keylen);')
+            print('      if (argdata_get_str(key, &keystr, &keylen) == 0) {')
+            print('        std::string_view keyss(keystr, keylen);')
             prefix = ''
             for field in sorted(self._fields, key=lambda field: field.get_name(False)):
-                print('      %sif (keyss == "%s") {' % (prefix, field.get_name(False)))
+                print('        %sif (keyss == "%s") {' % (prefix, field.get_name(False)))
                 field.get_type().print_parsing(field.get_name(True), declarations)
                 prefix = '} else '
+            print('        }')
             print('      }')
+            print('      argdata_map_next(&it);')
             print('    }')
         print('  }')
         print()
@@ -661,8 +662,8 @@ class MessageDeclaration:
         print('  %s %s_;' % (self._name, name))
 
     def print_parsing(self, name):
-        print('        has_%s_ = true;' % name)
-        print('        %s_.Parse(*value, argdata_parser);' % name)
+        print('          has_%s_ = true;' % name)
+        print('          %s_.Parse(*value, argdata_parser);' % name)
 
     def print_parsing_map_value(self, name):
         print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2, argdata_parser);' % (name, self._name))
