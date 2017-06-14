@@ -122,8 +122,9 @@ TEST(Server, UnaryEcho) {
   arpc::ServerBuilder builder(fds[1]);
   EchoService service;
   builder.RegisterService(&service);
-  EXPECT_EQ(0, builder.Build()->HandleRequest());
-  EXPECT_EQ(0, builder.Build()->HandleRequest());
+  std::shared_ptr<arpc::Server> server = builder.Build();
+  EXPECT_EQ(0, server->HandleRequest());
+  EXPECT_EQ(0, server->HandleRequest());
   caller.join();
 
   EXPECT_EQ(0, close(fds[0]));
