@@ -7,7 +7,7 @@
 
 using namespace arpc;
 
-const argdata_t* ArgdataBuilder::BuildFileDescriptor(
+const argdata_t* ArgdataBuilder::BuildFd(
     const std::shared_ptr<FileDescriptor>& value) {
   return argdatas_
       .emplace_back(
@@ -25,7 +25,16 @@ const argdata_t* ArgdataBuilder::BuildMap(
       .get();
 }
 
-const argdata_t* ArgdataBuilder::BuildString(std::string_view value) {
+const argdata_t* ArgdataBuilder::BuildSeq(
+    std::vector<const argdata_t*> elements) {
+  std::size_t size = elements.size();
+  return argdatas_
+      .emplace_back(argdata_create_seq(
+          vectors_.emplace_front(std::move(elements)).data(), size))
+      .get();
+}
+
+const argdata_t* ArgdataBuilder::BuildStr(std::string_view value) {
   std::size_t size = value.size();
   return argdatas_
       .emplace_back(

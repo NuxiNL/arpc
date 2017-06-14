@@ -75,11 +75,16 @@ class ArgdataParser {
 
 class ArgdataBuilder {
  public:
-  const argdata_t* BuildFileDescriptor(
-      const std::shared_ptr<FileDescriptor>& value);
+  const argdata_t* BuildFd(const std::shared_ptr<FileDescriptor>& value);
   const argdata_t* BuildMap(std::vector<const argdata_t*> keys,
                             std::vector<const argdata_t*> values);
-  const argdata_t* BuildString(std::string_view value);
+  const argdata_t* BuildSeq(std::vector<const argdata_t*> elements);
+  const argdata_t* BuildStr(std::string_view value);
+
+  template <typename T>
+  const argdata_t* BuildInt(T value) {
+    return argdatas_.emplace_back(argdata_create_int(value)).get();
+  }
 
  private:
   std::vector<std::unique_ptr<argdata_t>> argdatas_;

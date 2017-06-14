@@ -25,6 +25,9 @@ class NumericType(ScalarType):
     def get_initializer(self, name, declarations):
         return '%s_(%s)' % (name, self.get_default_value())
 
+    def get_isset_expression(self, name, declarations):
+        return '%s_ != %s' % (name, self.get_default_value())
+
     def print_accessors(self, name, declarations):
         print('  %s %s() const { return %s_; }' % (self.get_storage_type(declarations), name, name))
         print('  void set_%s(%s value) { %s_ = value; }' % (name, self.get_storage_type(declarations), name))
@@ -46,6 +49,12 @@ class IntegerType(NumericType):
 
     def get_storage_type(self, declarations):
         return 'std::%s_t' % self._name
+
+    def print_building(self, name, declarations):
+        print('      values.push_back(argdata_builder->BuildInt(%s_));' % name)
+
+    def print_building_repeated(self, declarations):
+        print('        elements.push_back(argdata_builder->BuildInt(element));')
 
     def print_parsing(self, name, declarations):
         print('          argdata_get_int(value, &%s_);' % name)
@@ -155,13 +164,16 @@ class StringType(StringlikeType):
     grammar = ['string']
 
     def print_building(self, name, declarations):
-        print('      values.push_back(argdata_builder->BuildString(%s_));' % name)
+        print('      values.push_back(argdata_builder->BuildStr(%s_));' % name)
 
     def print_building_map_key(self):
-        print('        mapkeys.push_back(argdata_builder->BuildString(mapentry.first));')
+        print('        mapkeys.push_back(argdata_builder->BuildStr(mapentry.first));')
 
     def print_building_map_value(self, declarations):
-        print('        mapvalues.push_back(argdata_builder->BuildString(mapentry.second));')
+        print('        mapvalues.push_back(argdata_builder->BuildStr(mapentry.second));')
+
+    def print_building_repeated(self, declarations):
+        print('        elements.push_back(argdata_builder->BuildStr(element));')
 
     def print_parsing(self, name, declarations):
         print('          const char* valuestr;');
@@ -182,10 +194,10 @@ class StringType(StringlikeType):
         print('                %s_.emplace(mapkey, std::string()).first->second = std::string_view(key2str, key2len);' % name)
 
     def print_parsing_repeated(self, name, declarations):
-        print('          const char* elementstr;');
-        print('          std::size_t elementlen;');
-        print('          if (argdata_get_str(element, &elementstr, &elementlen) == 0)')
-        print('            %s_.emplace_back(std::string_view(elementstr, elementlen));' % name)
+        print('            const char* elementstr;');
+        print('            std::size_t elementlen;');
+        print('            if (argdata_get_str(element, &elementstr, &elementlen) == 0)')
+        print('              %s_.emplace_back(std::string_view(elementstr, elementlen));' % name)
 
 
 class BytesType(StringlikeType):
@@ -226,7 +238,7 @@ class FileDescriptorType:
         print('  void add_%s(const std::shared_ptr<arpc::FileDescriptor>& value) { %s_.push_back(value); }' % (name, name))
 
     def print_building(self, name, declarations):
-        print('      values.push_back(argdata_builder->BuildFileDescriptor(%s_));' % name)
+        print('      values.push_back(argdata_builder->BuildFd(%s_));' % name)
 
     def print_fields(self, name, declarations):
         print('  std::shared_ptr<arpc::FileDescriptor> %s_;' % name)
@@ -405,6 +417,9 @@ class RepeatedType:
     def get_initializer(self, name, declarations):
         return ''
 
+    def get_isset_expression(self, name, declarations):
+        return '!%s_.empty()' % name
+
     def get_storage_type(self, declarations):
         return 'std::vector<%s>' % self._type.get_storage_type(declarations)
 
@@ -415,6 +430,13 @@ class RepeatedType:
         print('  const %s& %s() const { return %s_; }' % (self.get_storage_type(declarations), name, name))
         print('  %s* %s() { return &%s_; }' % (self.get_storage_type(declarations), name, name))
 
+    def print_building(self, name, declarations):
+        print('      std::vector<const argdata_t*> elements;')
+        print('      for (const auto& element : %s_) {' % name)
+        self._type.print_building_repeated(declarations)
+        print('      }')
+        print('      values.push_back(argdata_builder->BuildSeq(std::move(elements)));')
+
     def print_fields(self, name, declarations):
         print('  %s %s_;' % (self.get_storage_type(declarations), name))
 
@@ -422,8 +444,9 @@ class RepeatedType:
         print('          argdata_seq_iterator_t it2;')
         print('          argdata_seq_iterate(value, &it2);')
         print('          const argdata_t* element;')
-        print('          while (argdata_seq_next(&it2, &element)) {')
+        print('          while (argdata_seq_get(&it2, &element)) {')
         self._type.print_parsing_repeated(name, declarations)
+        print('            argdata_seq_next(&it2);')
         print('          }')
 
 
@@ -484,7 +507,7 @@ class EnumDeclaration:
         print('  void add_%s(%s value) { return %s_.push_back(value); }' % (name, self._name, name))
 
     def print_building(self, name):
-        print('      values.push_back(argdata_builder->BuildString(%s_Name(%s_)));' % (self._name, name))
+        print('      values.push_back(argdata_builder->BuildStr(%s_Name(%s_)));' % (self._name, name))
 
     def print_code(self, declarations):
         print('enum %s {' % self._name)
@@ -638,7 +661,7 @@ class MessageDeclaration:
             print('    std::vector<const argdata_t*> values;')
             for field in sorted(self._fields, key=lambda field: field.get_name(False)):
                 print('    if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
-                print('      keys.push_back(argdata_builder->BuildString("%s"));' % field.get_name(False))
+                print('      keys.push_back(argdata_builder->BuildStr("%s"));' % field.get_name(False))
                 field.get_type().print_building(field.get_name(True), declarations)
                 print('    }')
             print('    return argdata_builder->BuildMap(std::move(keys), std::move(values));')
