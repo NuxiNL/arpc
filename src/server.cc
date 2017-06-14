@@ -12,7 +12,7 @@ int Server::HandleRequest() {
   // TODO(ed): Make buffer size configurable!
   std::unique_ptr<argdata_reader_t> reader = argdata_reader_t::create(4096, 16);
   {
-    int error = reader->pull(fd_);
+    int error = reader->pull(fd_->get());
     if (error != 0)
       return error;
   }
@@ -57,7 +57,7 @@ int Server::HandleRequest() {
 
     std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
     writer->set(server_message.Build(&argdata_builder));
-    return writer->push(fd_);
+    return writer->push(fd_->get());
   } else {
     // Invalid operation.
     return EOPNOTSUPP;

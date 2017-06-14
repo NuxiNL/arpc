@@ -4,10 +4,12 @@ package server_test_proto;
 
 message Input {
   string text = 1;
+  fd file_descriptor = 2;
 }
 
 message Output {
   string text = 1;
+  fd file_descriptor = 2;
 }
 
 service Service {

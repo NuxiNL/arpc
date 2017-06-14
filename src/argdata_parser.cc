@@ -14,7 +14,7 @@ ArgdataParser::~ArgdataParser() {
   // descriptors attached to the message, except those that have been
   // handed out by us.
   for (const auto& file_descriptor : file_descriptors_)
-    argdata_reader_release_fd(reader_, file_descriptor->get_fd());
+    argdata_reader_release_fd(reader_, file_descriptor->get());
 }
 
 const argdata_t* ArgdataParser::ParseAnyFromMap(

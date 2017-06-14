@@ -2,21 +2,15 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <argdata.hpp>
 
 #include <memory>
 #include <thread>
 
 #include <arpc++/arpc++.h>
 #include <gtest/gtest.h>
+#include <argdata.hpp>
 
 #include "server_test_proto.h"
-
-TEST(Server, BadFileDescriptor) {
-  // Attempting to use a bad file descriptor should trigger EBADF.
-  arpc::ServerBuilder builder(-1);
-  EXPECT_EQ(EBADF, builder.Build()->HandleRequest());
-}
 
 TEST(Server, EndOfFile) {
   // Close one half of a socket pair. Reading requests should return
@@ -25,9 +19,8 @@ TEST(Server, EndOfFile) {
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
   EXPECT_EQ(0, close(fds[0]));
 
-  arpc::ServerBuilder builder(fds[1]);
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
   EXPECT_EQ(-1, builder.Build()->HandleRequest());
-  EXPECT_EQ(0, close(fds[1]));
 }
 
 TEST(Server, BadMessage) {
@@ -38,9 +31,8 @@ TEST(Server, BadMessage) {
   EXPECT_EQ(1, write(fds[0], "a", 1));
   EXPECT_EQ(0, close(fds[0]));
 
-  arpc::ServerBuilder builder(fds[1]);
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
   EXPECT_EQ(EBADMSG, builder.Build()->HandleRequest());
-  EXPECT_EQ(0, close(fds[1]));
 }
 
 TEST(Server, InvalidOperation) {
@@ -51,12 +43,10 @@ TEST(Server, InvalidOperation) {
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   writer->set(argdata_t::null());
   EXPECT_EQ(0, writer->push(fds[0]));
-
-  arpc::ServerBuilder builder(fds[1]);
-  EXPECT_EQ(EOPNOTSUPP, builder.Build()->HandleRequest());
-
   EXPECT_EQ(0, close(fds[0]));
-  EXPECT_EQ(0, close(fds[1]));
+
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
+  EXPECT_EQ(EOPNOTSUPP, builder.Build()->HandleRequest());
 }
 
 TEST(Server, ServiceNotRegistered) {
@@ -64,7 +54,8 @@ TEST(Server, ServiceNotRegistered) {
   // should fail with UNIMPLEMENTED to indicate the service's absence.
   int fds[2];
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
-  std::shared_ptr<arpc::Channel> channel = arpc::CreateChannel(fds[0]);
+  std::shared_ptr<arpc::Channel> channel =
+      arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
   std::unique_ptr<server_test_proto::Service::Stub> stub =
       server_test_proto::Service::NewStub(channel);
   std::thread caller([&stub]() {
@@ -76,12 +67,9 @@ TEST(Server, ServiceNotRegistered) {
     EXPECT_EQ("Service not registered", status.error_message());
   });
 
-  arpc::ServerBuilder builder(fds[1]);
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
   EXPECT_EQ(0, builder.Build()->HandleRequest());
   caller.join();
-
-  EXPECT_EQ(0, close(fds[0]));
-  EXPECT_EQ(0, close(fds[1]));
 }
 
 // Simple service that does nothing more than echoing responses.
@@ -92,6 +80,7 @@ class EchoService final : public server_test_proto::Service::Service {
                          const server_test_proto::Input* request,
                          server_test_proto::Output* response) {
     response->set_text(request->text());
+    response->set_file_descriptor(request->file_descriptor());
     return arpc::Status::OK;
   }
 };
@@ -102,7 +91,8 @@ TEST(Server, UnaryEcho) {
   // properly ends up in the output.
   int fds[2];
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
-  std::shared_ptr<arpc::Channel> channel = arpc::CreateChannel(fds[0]);
+  std::shared_ptr<arpc::Channel> channel =
+      arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
   std::unique_ptr<server_test_proto::Service::Stub> stub =
       server_test_proto::Service::NewStub(channel);
   std::thread caller([&stub]() {
@@ -111,22 +101,56 @@ TEST(Server, UnaryEcho) {
     server_test_proto::Output output;
 
     input.set_text("Hello, world!");
-    ASSERT_TRUE(stub->UnaryCall(&context, input, &output).ok());
-    ASSERT_EQ("Hello, world!", output.text());
+    EXPECT_TRUE(stub->UnaryCall(&context, input, &output).ok());
+    EXPECT_EQ("Hello, world!", output.text());
 
     input.set_text("Goodbye, world!");
-    ASSERT_TRUE(stub->UnaryCall(&context, input, &output).ok());
-    ASSERT_EQ("Goodbye, world!", output.text());
+    EXPECT_TRUE(stub->UnaryCall(&context, input, &output).ok());
+    EXPECT_EQ("Goodbye, world!", output.text());
   });
 
-  arpc::ServerBuilder builder(fds[1]);
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
   EchoService service;
   builder.RegisterService(&service);
   std::shared_ptr<arpc::Server> server = builder.Build();
   EXPECT_EQ(0, server->HandleRequest());
   EXPECT_EQ(0, server->HandleRequest());
   caller.join();
-
   EXPECT_EQ(0, close(fds[0]));
-  EXPECT_EQ(0, close(fds[1]));
+}
+
+TEST(Server, UnaryFileDesciptorPassing) {
+  // Use the EchoService to pass a file descriptor back to us.
+  int fds[2];
+  EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
+  std::shared_ptr<arpc::Channel> channel =
+      arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
+  std::unique_ptr<server_test_proto::Service::Stub> stub =
+      server_test_proto::Service::NewStub(channel);
+  std::thread caller([&stub]() {
+    arpc::ClientContext context;
+    server_test_proto::Input input;
+    server_test_proto::Output output;
+
+    // Write something into the pipe and send the read side to the
+    // EchoService.
+    int pfds[2];
+    EXPECT_EQ(0, pipe(pfds));
+    EXPECT_EQ(5, write(pfds[1], "Hello", 5));
+    EXPECT_EQ(0, close(pfds[1]));
+    input.set_file_descriptor(std::make_shared<arpc::FileDescriptor>(pfds[0]));
+    EXPECT_TRUE(stub->UnaryCall(&context, input, &output).ok());
+
+    // Original message should still be contained in the pipe.
+    char buf[6];
+    EXPECT_EQ(5, read(output.file_descriptor()->get(), buf, sizeof(buf)));
+    ASSERT_EQ("Hello", std::string_view(buf, 5));
+  });
+
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
+  EchoService service;
+  builder.RegisterService(&service);
+  std::shared_ptr<arpc::Server> server = builder.Build();
+  EXPECT_EQ(0, server->HandleRequest());
+  caller.join();
 }

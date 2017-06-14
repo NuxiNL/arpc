@@ -29,7 +29,7 @@ class FileDescriptor {
     close(fd_);
   }
 
-  int get_fd() {
+  int get() {
     return fd_;
   }
 
@@ -57,13 +57,13 @@ class ArgdataParser {
 
     bool operator()(const std::shared_ptr<FileDescriptor>& a,
                     const std::shared_ptr<FileDescriptor>& b) const {
-      return a->get_fd() < b->get_fd();
+      return a->get() < b->get();
     }
     bool operator()(int a, const std::shared_ptr<FileDescriptor>& b) const {
-      return a < b->get_fd();
+      return a < b->get();
     }
     bool operator()(const std::shared_ptr<FileDescriptor>& a, int b) const {
-      return a->get_fd() < b;
+      return a->get() < b;
     }
   };
 
@@ -178,17 +178,18 @@ class Service {
 
 class Channel {
  public:
-  explicit Channel(int fd) : fd_(fd) {
+  explicit Channel(const std::shared_ptr<FileDescriptor>& fd) : fd_(fd) {
   }
 
   Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
                            const Message& request, Message* response);
 
  private:
-  int fd_;
+  const std::shared_ptr<FileDescriptor> fd_;
 };
 
-std::shared_ptr<Channel> CreateChannel(int fd);
+std::shared_ptr<Channel> CreateChannel(
+    const std::shared_ptr<FileDescriptor>& fd);
 
 class ClientContext {};
 
@@ -298,20 +299,21 @@ class ClientReaderWriter {
 
 class Server {
  public:
-  Server(int fd, const std::map<std::string, Service*, std::less<>>& services)
+  Server(const std::shared_ptr<FileDescriptor>& fd,
+         const std::map<std::string, Service*, std::less<>>& services)
       : fd_(fd), services_(services) {
   }
 
   int HandleRequest();
 
  private:
-  const int fd_;
+  const std::shared_ptr<FileDescriptor> fd_;
   const std::map<std::string, Service*, std::less<>> services_;
 };
 
 class ServerBuilder {
  public:
-  ServerBuilder(int fd) : fd_(fd) {
+  ServerBuilder(const std::shared_ptr<FileDescriptor>& fd) : fd_(fd) {
   }
 
   std::unique_ptr<Server> Build() {
@@ -325,7 +327,7 @@ class ServerBuilder {
   }
 
  private:
-  const int fd_;
+  const std::shared_ptr<FileDescriptor> fd_;
   std::map<std::string, Service*, std::less<>> services_;
 };
 

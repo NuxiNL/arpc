@@ -11,7 +11,7 @@ const argdata_t* ArgdataBuilder::BuildFileDescriptor(
     const std::shared_ptr<FileDescriptor>& value) {
   return argdatas_
       .emplace_back(
-          argdata_create_fd(file_descriptors_.emplace_back(value)->get_fd()))
+          argdata_create_fd(file_descriptors_.emplace_back(value)->get()))
       .get();
 }
 

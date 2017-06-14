@@ -23,7 +23,7 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
 
     std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
     writer->set(client_message.Build(&argdata_builder));
-    int error = writer->push(fd_);
+    int error = writer->push(fd_->get());
     if (error != 0)
       return Status(StatusCode::INTERNAL, strerror(error));
   }
@@ -33,7 +33,7 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
     // TODO(ed): Make message size configurable.
     std::unique_ptr<argdata_reader_t> reader =
         argdata_reader_t::create(4096, 16);
-    int error = reader->pull(fd_);
+    int error = reader->pull(fd_->get());
     if (error != 0)
       return Status(StatusCode::INTERNAL, strerror(error));
     const argdata_t* server_response = reader->get();
@@ -53,6 +53,7 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
   }
 }
 
-std::shared_ptr<Channel> arpc::CreateChannel(int fd) {
+std::shared_ptr<Channel> arpc::CreateChannel(
+    const std::shared_ptr<FileDescriptor>& fd) {
   return std::make_shared<Channel>(fd);
 }
