@@ -15,3 +15,15 @@ message UnaryOutput {
 service UnaryService {
   rpc UnaryCall(UnaryInput) returns (UnaryOutput);
 }
+
+message AdderInput {
+  int32 value = 1;
+}
+
+message AdderOutput {
+  int32 sum = 1;
+}
+
+service ClientStreamAdderService {
+  rpc Add(stream AdderInput) returns (AdderOutput);
+}

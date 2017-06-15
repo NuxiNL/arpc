@@ -720,6 +720,17 @@ class ServiceRpcDeclaration:
     def get_name(self):
         return self._name
 
+    def print_service_blocking_client_streaming_call(self, declarations):
+        if self._argument_type.is_stream() and not self._return_type.is_stream():
+            print('    if (rpc == "%s") {' % self._name)
+            print('      arpc::ServerReader<AdderInput> reader_object(reader);')
+            print('      %s response_object;' % self._return_type.get_storage_type(declarations))
+            print('      arpc::Status status = %s(context, &reader_object, &response_object);' % self._name)
+            print('      if (status.ok())')
+            print('        *response = response_object.Build(argdata_builder);')
+            print('      return status;')
+            print('    }')
+
     def print_service_blocking_unary_call(self, declarations):
         if not self._argument_type.is_stream() and not self._return_type.is_stream():
             print('    if (rpc == "%s") {' % self._name)
@@ -798,6 +809,13 @@ class ServiceDeclaration:
         print('  arpc::Status BlockingUnaryCall(std::string_view rpc, arpc::ServerContext* context, const argdata_t& request, arpc::ArgdataParser* argdata_parser, const argdata_t** response, arpc::ArgdataBuilder* argdata_builder) override {')
         for rpc in self._rpcs:
             rpc.print_service_blocking_unary_call(declarations)
+        print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')
+        print('  }')
+        print()
+
+        print('  arpc::Status BlockingClientStreamingCall(std::string_view rpc, arpc::ServerContext* context, arpc::ServerReaderImpl* reader, const argdata_t** response, arpc::ArgdataBuilder* argdata_builder) override {')
+        for rpc in self._rpcs:
+            rpc.print_service_blocking_client_streaming_call(declarations)
         print('    return arpc::Status(arpc::StatusCode::UNIMPLEMENTED, "Operation not provided by this service");')
         print('  }')
 

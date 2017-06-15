@@ -58,6 +58,9 @@ int Server::HandleRequest() {
     std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
     writer->set(server_message.Build(&argdata_builder));
     return writer->push(fd_->get());
+  } else if (client_message.has_client_streaming_start_request()) {
+    // Start of a client streaming call.
+    return ENOSYS;
   } else {
     // Invalid operation.
     return EOPNOTSUPP;

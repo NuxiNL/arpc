@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <cstdint>
 #include <memory>
 #include <thread>
 
@@ -78,7 +79,7 @@ class EchoService final : public server_test_proto::UnaryService::Service {
  public:
   arpc::Status UnaryCall(arpc::ServerContext* context,
                          const server_test_proto::UnaryInput* request,
-                         server_test_proto::UnaryOutput* response) {
+                         server_test_proto::UnaryOutput* response) override {
     response->set_text(request->text());
     response->set_file_descriptor(request->file_descriptor());
     return arpc::Status::OK;
@@ -144,11 +145,67 @@ TEST(Server, UnaryFileDesciptorPassing) {
     // Original message should still be contained in the pipe.
     char buf[6];
     EXPECT_EQ(5, read(output.file_descriptor()->get(), buf, sizeof(buf)));
-    ASSERT_EQ("Hello", std::string_view(buf, 5));
+    EXPECT_EQ("Hello", std::string_view(buf, 5));
   });
 
   arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
   EchoService service;
+  builder.RegisterService(&service);
+  std::shared_ptr<arpc::Server> server = builder.Build();
+  EXPECT_EQ(0, server->HandleRequest());
+  caller.join();
+}
+
+// Service that adds a stream of numbers.
+namespace {
+class AdderService final
+    : public server_test_proto::ClientStreamAdderService::Service {
+ public:
+  arpc::Status Add(arpc::ServerContext* context,
+                   arpc::ServerReader<server_test_proto::AdderInput>* reader,
+                   server_test_proto::AdderOutput* response) override {
+    server_test_proto::AdderInput input;
+    std::int32_t sum = 0;
+    while (reader->Read(&input))
+      sum += input.value();
+    response->set_sum(sum);
+    return arpc::Status::OK;
+  }
+};
+}
+
+TEST(Server, ClientStreamAdder) {
+  // Use the AdderService to add some numbers together.
+  int fds[2];
+  EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
+  std::shared_ptr<arpc::Channel> channel =
+      arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
+  std::unique_ptr<server_test_proto::ClientStreamAdderService::Stub> stub =
+      server_test_proto::ClientStreamAdderService::NewStub(channel);
+  std::thread caller([&stub]() {
+    arpc::ClientContext context;
+    server_test_proto::AdderInput input;
+    server_test_proto::AdderOutput output;
+
+    // Write numbers and extract the sum.
+    std::unique_ptr<arpc::ClientWriter<server_test_proto::AdderInput>> writer(
+        stub->Add(&context, &output));
+    input.set_value(237);
+    EXPECT_TRUE(writer->Write(input));
+    input.set_value(7845);
+    EXPECT_TRUE(writer->Write(input));
+    input.set_value(57592);
+    EXPECT_TRUE(writer->Write(input));
+    input.set_value(3);
+    EXPECT_TRUE(writer->Write(input));
+    input.set_value(7284);
+    EXPECT_TRUE(writer->WritesDone());
+    EXPECT_TRUE(writer->Finish().ok());
+    EXPECT_EQ(72961, output.sum());
+  });
+
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
+  AdderService service;
   builder.RegisterService(&service);
   std::shared_ptr<arpc::Server> server = builder.Build();
   EXPECT_EQ(0, server->HandleRequest());

@@ -45,8 +45,13 @@ message UnaryRequest {
   google.protobuf.Any request = 2;
 }
 
+message ClientStreamingStartRequest {
+  RpcMethod rpc_method = 1;
+}
+
 message ClientMessage {
   UnaryRequest unary_request = 1;
+  ClientStreamingStartRequest client_streaming_start_request = 2;
 }
 
 // Messages sent from servers to clients.
@@ -56,6 +61,11 @@ message UnaryResponse {
   google.protobuf.Any response = 2;
 }
 
+message ClientStreamingStartResponse {
+  Status status = 1;
+}
+
 message ServerMessage {
   UnaryResponse unary_response = 1;
+  ClientStreamingStartResponse client_streaming_start_response = 2;
 }

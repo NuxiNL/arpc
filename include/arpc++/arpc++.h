@@ -17,6 +17,7 @@ namespace arpc {
 
 class ClientContext;
 class ServerContext;
+class ServerReaderImpl;
 
 class FileDescriptor {
  public:
@@ -148,8 +149,8 @@ class Status {
   static const Status OK;
 
  private:
-  const StatusCode code_;
-  const std::string message_;
+  StatusCode code_;
+  std::string message_;
 };
 
 class RpcMethod {
@@ -179,6 +180,9 @@ class Service {
                                    ArgdataParser* argdata_parser,
                                    const argdata_t** response,
                                    ArgdataBuilder* argdata_builder) = 0;
+  virtual Status BlockingClientStreamingCall(
+      std::string_view rpc, ServerContext* context, ServerReaderImpl* reader,
+      const argdata_t** response, ArgdataBuilder* argdata_builder) = 0;
 };
 
 class Channel {
@@ -188,6 +192,10 @@ class Channel {
 
   Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
                            const Message& request, Message* response);
+
+  const std::shared_ptr<FileDescriptor>& GetFileDescriptor() {
+    return fd_;
+  }
 
  private:
   const std::shared_ptr<FileDescriptor> fd_;
@@ -232,10 +240,17 @@ class ClientWriterImpl {
  public:
   ClientWriterImpl(Channel* channel, const RpcMethod& method,
                    ClientContext* context, Message* response);
+  ~ClientWriterImpl();
 
   Status Finish();
   bool Write(const Message& msg);
   bool WritesDone();
+
+ private:
+  const std::shared_ptr<FileDescriptor> fd_;
+  Message* const response_;
+  Status status_;
+  bool writes_done_;
 };
 
 template <typename W>
@@ -349,12 +364,15 @@ class ServerReaderImpl {
 template <typename R>
 class ServerReader {
  public:
+  explicit ServerReader(ServerReaderImpl* impl) : impl_(impl) {
+  }
+
   bool Read(R* msg) {
-    return impl_.Read(msg);
+    return impl_->Read(msg);
   }
 
  private:
-  ServerReaderImpl impl_;
+  ServerReaderImpl* impl_;
 };
 
 class ServerWriterImpl {
