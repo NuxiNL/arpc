@@ -2,6 +2,8 @@ syntax = 'proto3';
 
 package arpc_protocol;
 
+import "google/protobuf/any.proto";
+
 // The ARPC wire format.
 
 enum StatusCode {
