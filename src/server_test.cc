@@ -199,6 +199,7 @@ TEST(Server, ClientStreamAdder) {
     input.set_value(3);
     EXPECT_TRUE(writer->Write(input));
     input.set_value(7284);
+    EXPECT_TRUE(writer->Write(input));
     EXPECT_TRUE(writer->WritesDone());
     EXPECT_TRUE(writer->Finish().ok());
     EXPECT_EQ(72961, output.sum());

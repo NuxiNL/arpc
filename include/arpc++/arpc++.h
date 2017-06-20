@@ -192,6 +192,7 @@ class Channel {
 
   Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
                            const Message& request, Message* response);
+  Status FinishUnaryResponse(Message* response);
 
   const std::shared_ptr<FileDescriptor>& GetFileDescriptor() {
     return fd_;
@@ -247,7 +248,7 @@ class ClientWriterImpl {
   bool WritesDone();
 
  private:
-  const std::shared_ptr<FileDescriptor> fd_;
+  Channel* const channel_;
   Message* const response_;
   Status status_;
   bool writes_done_;
@@ -358,7 +359,16 @@ class ServerContext {
 
 class ServerReaderImpl {
  public:
+  explicit ServerReaderImpl(const std::shared_ptr<FileDescriptor>& fd)
+      : fd_(fd), finished_(false) {
+  }
+  ~ServerReaderImpl();
+
   bool Read(Message* msg);
+
+ private:
+  const std::shared_ptr<FileDescriptor> fd_;
+  bool finished_;
 };
 
 template <typename R>
