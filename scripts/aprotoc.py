@@ -130,6 +130,9 @@ class BooleanType(NumericType):
     def get_storage_type(self, declarations):
         return 'bool'
 
+    def print_building(self, name, declarations):
+        print('      values.push_back(&argdata_true);')
+
     def print_parsing(self, name, declarations):
         print('          argdata_get_bool(value, &%s_);' % name)
 
