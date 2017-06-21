@@ -387,10 +387,7 @@ class ServerBuilder {
   std::map<std::string, Service*, std::less<>> services_;
 };
 
-class ServerContext {
- public:
-  bool IsCancelled() const;
-};
+class ServerContext {};
 
 class ServerReaderImpl {
  public:
