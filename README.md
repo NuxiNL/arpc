@@ -18,6 +18,12 @@ privileges, but still be able to deliver mail to user's mailboxes by
 making use of an auxiliary process that hands out file descriptors to
 mail spools stored on disk.
 
+ARPC does not support any authentication and authorization, for the
+reason that it is mainly intended to be used across UNIX sockets. It
+also does not provide any support for concurrency and GRPC's
+asynchronous API. Concurrency can be introduced by opening multiple
+channels across separate UNIX sockets.
+
 ARPC has been built on top of a serialization library called
 [Argdata](https://github.com/NuxiNL/argdata), which in its turn has been
 developed as hierarchical configuration file format for
