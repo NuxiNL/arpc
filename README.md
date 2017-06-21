@@ -4,7 +4,7 @@ ARPC - An RPC framework that supports file descriptor passing
 ## Introduction
 
 ARPC is an RPC framework that is heavily inspired by Google's Protobuf
-and GRPC and aims to be compatible with its core basic C++ API.
+and GRPC and aims to be compatible with its core C++ API.
 
 Similar to GRPC/Protobuf, ARPC ships with a script called `aprotoc` that
 can convert `.proto` files to C++ header files containing message and
