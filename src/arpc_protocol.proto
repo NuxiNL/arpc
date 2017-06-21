@@ -71,6 +71,16 @@ message UnaryResponse {
   google.protobuf.Any response = 2;
 }
 
+message StreamingResponseData {
+  google.protobuf.Any response = 1;
+}
+
+message StreamingResponseFinish {
+  Status status = 1;
+}
+
 message ServerMessage {
   UnaryResponse unary_response = 1;
+  StreamingResponseData streaming_response_data = 2;
+  StreamingResponseFinish streaming_response_finish = 3;
 }

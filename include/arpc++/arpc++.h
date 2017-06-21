@@ -219,7 +219,7 @@ class ClientReaderImpl {
  private:
   const std::shared_ptr<FileDescriptor> fd_;
   Status status_;
-  bool reads_done_;
+  bool finished_;
 };
 
 template <typename R>
