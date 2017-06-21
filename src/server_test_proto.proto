@@ -27,3 +27,17 @@ message AdderOutput {
 service ClientStreamAdderService {
   rpc Add(stream AdderInput) returns (AdderOutput);
 }
+
+message FibonacciInput {
+  uint64 a = 1;
+  uint64 b = 2;
+  uint32 terms = 3;
+}
+
+message FibonacciOutput {
+  uint64 term = 1;
+}
+
+service ServerStreamFibonacciService {
+  rpc GetSequence(FibonacciInput) returns (stream FibonacciOutput);
+}

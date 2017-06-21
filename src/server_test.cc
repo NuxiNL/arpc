@@ -212,3 +212,66 @@ TEST(Server, ClientStreamAdder) {
   EXPECT_EQ(0, server->HandleRequest());
   caller.join();
 }
+
+namespace {
+class FibonacciService final
+    : public server_test_proto::ServerStreamFibonacciService::Service {
+ public:
+  arpc::Status GetSequence(
+      arpc::ServerContext* context,
+      const server_test_proto::FibonacciInput* request,
+      arpc::ServerWriter<server_test_proto::FibonacciOutput>* writer) override {
+    std::uint64_t a = request->a();
+    std::uint64_t b = request->b();
+    for (std::uint32_t i = 0; i < request->terms(); ++i) {
+      server_test_proto::FibonacciOutput output;
+      output.set_term(a);
+      if (!writer->Write(output))
+        break;
+      std::tie(a, b) = std::make_pair(b, a + b);
+    }
+    return arpc::Status::OK;
+  }
+};
+}
+
+TEST(Server, ServerStreamFibonacci) {
+  // Use the FibonacciService to stream a sequence of messages to a client.
+  int fds[2];
+  EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
+  std::shared_ptr<arpc::Channel> channel =
+      arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
+  std::unique_ptr<server_test_proto::ServerStreamFibonacciService::Stub> stub =
+      server_test_proto::ServerStreamFibonacciService::NewStub(channel);
+  std::thread caller([&stub]() {
+    arpc::ClientContext context;
+    server_test_proto::FibonacciInput input;
+    server_test_proto::FibonacciOutput output;
+
+    // Request the first five Brady numbers (OEIS A247698).
+    input.set_a(2308);
+    input.set_b(4261);
+    input.set_terms(5);
+    std::unique_ptr<arpc::ClientReader<server_test_proto::FibonacciOutput>>
+        reader(stub->GetSequence(&context, input));
+    EXPECT_TRUE(reader->Read(&output));
+    EXPECT_EQ(2308, output.term());
+    EXPECT_TRUE(reader->Read(&output));
+    EXPECT_EQ(4261, output.term());
+    EXPECT_TRUE(reader->Read(&output));
+    EXPECT_EQ(6569, output.term());
+    EXPECT_TRUE(reader->Read(&output));
+    EXPECT_EQ(10830, output.term());
+    EXPECT_TRUE(reader->Read(&output));
+    EXPECT_EQ(17399, output.term());
+    EXPECT_FALSE(reader->Read(&output));
+    EXPECT_TRUE(reader->Finish().ok());
+  });
+
+  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
+  FibonacciService service;
+  builder.RegisterService(&service);
+  std::shared_ptr<arpc::Server> server = builder.Build();
+  EXPECT_EQ(0, server->HandleRequest());
+  caller.join();
+}

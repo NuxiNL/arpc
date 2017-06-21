@@ -25,10 +25,12 @@ add_library(arpc
   src/argdata_builder.cc
   src/argdata_parser.cc
   src/channel.cc
+  src/client_reader_impl.cc
   src/client_writer_impl.cc
   src/server.cc
   src/server_context.cc
   src/server_reader_impl.cc
+  src/server_writer_impl.cc
   src/status.cc
   src/status_code.cc
 )

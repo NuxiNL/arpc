@@ -211,9 +211,15 @@ class ClientReaderImpl {
  public:
   ClientReaderImpl(Channel* channel, const RpcMethod& method,
                    ClientContext* context, const Message& request);
+  ~ClientReaderImpl();
 
   Status Finish();
   bool Read(Message* msg);
+
+ private:
+  const std::shared_ptr<FileDescriptor> fd_;
+  Status status_;
+  bool reads_done_;
 };
 
 template <typename R>
