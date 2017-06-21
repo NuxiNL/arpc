@@ -43,6 +43,7 @@ message RpcMethod {
 message UnaryRequest {
   RpcMethod rpc_method = 1;
   google.protobuf.Any request = 2;
+  bool server_streaming = 3;
 }
 
 message StreamingRequestStart {

@@ -12,7 +12,6 @@ ClientReaderImpl::ClientReaderImpl(Channel* channel, const RpcMethod& method,
                                    const Message& request)
     : fd_(channel->GetFileDescriptor()), reads_done_(false) {
   // Send the request.
-  // TODO(ed): Set streaming flag?
   arpc_protocol::ClientMessage client_message;
   arpc_protocol::UnaryRequest* unary_request =
       client_message.mutable_unary_request();
@@ -21,6 +20,7 @@ ClientReaderImpl::ClientReaderImpl(Channel* channel, const RpcMethod& method,
   rpc_method->set_rpc(method.GetRpc());
   ArgdataBuilder argdata_builder;
   unary_request->set_request(request.Build(&argdata_builder));
+  unary_request->set_server_streaming(true);
 
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   writer->set(client_message.Build(&argdata_builder));
