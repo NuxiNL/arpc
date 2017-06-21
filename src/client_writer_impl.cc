@@ -21,8 +21,8 @@ ClientWriterImpl::ClientWriterImpl(Channel* channel, const RpcMethod& method,
       client_message.mutable_streaming_request_start();
   arpc_protocol::RpcMethod* rpc_method =
       streaming_request_start->mutable_rpc_method();
-  rpc_method->set_service(method.GetService());
-  rpc_method->set_rpc(method.GetRpc());
+  rpc_method->set_service(method.first);
+  rpc_method->set_rpc(method.second);
 
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   ArgdataBuilder argdata_builder;

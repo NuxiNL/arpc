@@ -22,8 +22,8 @@ ClientReaderImpl::ClientReaderImpl(Channel* channel, const RpcMethod& method,
   arpc_protocol::UnaryRequest* unary_request =
       client_message.mutable_unary_request();
   arpc_protocol::RpcMethod* rpc_method = unary_request->mutable_rpc_method();
-  rpc_method->set_service(method.GetService());
-  rpc_method->set_rpc(method.GetRpc());
+  rpc_method->set_service(method.first);
+  rpc_method->set_rpc(method.second);
   ArgdataBuilder argdata_builder;
   unary_request->set_request(request.Build(&argdata_builder));
   unary_request->set_server_streaming(true);
