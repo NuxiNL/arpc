@@ -26,6 +26,7 @@
 
 #include <unistd.h>
 
+#include <cassert>
 #include <forward_list>
 #include <map>
 #include <memory>
@@ -50,13 +51,14 @@ class ServerWriterImpl;
 class FileDescriptor {
  public:
   explicit FileDescriptor(int fd) : fd_(fd) {
+    assert(fd >= 0 && "Attempted to create invalid file descriptor object");
   }
 
   ~FileDescriptor() {
     close(fd_);
   }
 
-  int get() {
+  int get() const {
     return fd_;
   }
 
