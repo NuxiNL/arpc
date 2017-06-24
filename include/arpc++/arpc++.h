@@ -138,8 +138,9 @@ class Message {
   virtual ~Message() {
   }
 
-  virtual void Parse(const argdata_t& ad, ArgdataParser* argdata_parser) = 0;
   virtual const argdata_t* Build(ArgdataBuilder* argdata_builder) const = 0;
+  virtual void Clear() = 0;
+  virtual void Parse(const argdata_t& ad, ArgdataParser* argdata_parser) = 0;
 };
 
 enum class StatusCode {

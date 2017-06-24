@@ -52,8 +52,8 @@ Status Channel::FinishUnaryResponse(Message* response) {
     return Status(StatusCode::INTERNAL, "Server sent invalid response");
   const arpc_protocol::UnaryResponse& unary_response =
       server_message.unary_response();
-  // TODO(ed): Clear the message prior to parsing!
   // TODO(ed): Only do the parsing upon success!
+  response->Clear();
   response->Parse(*unary_response.response(), &argdata_parser);
   const arpc_protocol::Status& status = unary_response.status();
   return Status(StatusCode(status.code()), status.message());

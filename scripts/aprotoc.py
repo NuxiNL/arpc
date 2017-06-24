@@ -659,6 +659,24 @@ class MessageDeclaration:
         if initializers:
             print('  %s() : %s {}' % (self._name, ', '.join(initializers)))
             print()
+        print('  const argdata_t* Build(arpc::ArgdataBuilder* argdata_builder) const override {')
+        if self._fields:
+            print('    std::vector<const argdata_t*> keys;')
+            print('    std::vector<const argdata_t*> values;')
+            for field in sorted(self._fields, key=lambda field: field.get_name(False)):
+                print('    if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
+                print('      keys.push_back(argdata_builder->BuildStr("%s"));' % field.get_name(False))
+                field.get_type().print_building(field.get_name(True), declarations)
+                print('    }')
+            print('    return argdata_builder->BuildMap(std::move(keys), std::move(values));')
+        else:
+            print('    return &argdata_null;')
+        print('  }')
+        print()
+        print('  void Clear() override {')
+        print('    *this = %s();' % self._name)
+        print('  }')
+        print()
         print('  void Parse(const argdata_t& ad, arpc::ArgdataParser* argdata_parser) override {')
         if self._fields:
             print('    argdata_map_iterator_t it;')
@@ -679,20 +697,6 @@ class MessageDeclaration:
             print('      }')
             print('      argdata_map_next(&it);')
             print('    }')
-        print('  }')
-        print()
-        print('  const argdata_t* Build(arpc::ArgdataBuilder* argdata_builder) const override {')
-        if self._fields:
-            print('    std::vector<const argdata_t*> keys;')
-            print('    std::vector<const argdata_t*> values;')
-            for field in sorted(self._fields, key=lambda field: field.get_name(False)):
-                print('    if (%s) {' % (field.get_type().get_isset_expression(field.get_name(True), declarations)))
-                print('      keys.push_back(argdata_builder->BuildStr("%s"));' % field.get_name(False))
-                field.get_type().print_building(field.get_name(True), declarations)
-                print('    }')
-            print('    return argdata_builder->BuildMap(std::move(keys), std::move(values));')
-        else:
-            print('    return &argdata_null;')
         print('  }')
         print()
 

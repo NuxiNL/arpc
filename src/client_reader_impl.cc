@@ -74,7 +74,7 @@ bool ClientReaderImpl::Read(Message* msg) {
     // Server has sent an additional streamed message.
     const arpc_protocol::StreamingResponseData& streaming_response_data =
         server_message.streaming_response_data();
-    // TODO(ed): Clear the message prior to parsing!
+    msg->Clear();
     msg->Parse(*streaming_response_data.response(), &argdata_parser);
     return true;
   } else if (server_message.has_streaming_response_finish()) {
