@@ -345,6 +345,9 @@ class ReferenceType:
     def print_building(self, name, declarations):
         declarations[self._name].print_building(name)
 
+    def print_building_repeated(self, declarations):
+        declarations[self._name].print_building_repeated()
+
     def print_fields(self, name, declarations):
         declarations[self._name].print_fields(name)
 
@@ -649,6 +652,9 @@ class MessageDeclaration:
 
     def print_building(self, name):
         print('      values.push_back(%s_.Build(argdata_builder));' % name)
+
+    def print_building_repeated(self):
+        print('        elements.push_back(element.Build(argdata_builder));')
 
     def print_code(self, declarations):
         print('class %s final : public arpc::Message {' % self._name)
