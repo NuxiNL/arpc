@@ -538,6 +538,9 @@ class EnumDeclaration:
     def print_building(self, name):
         print('      values.push_back(argdata_builder->BuildStr(%s_Name(%s_)));' % (self._name, name))
 
+    def print_building_repeated(self):
+        print('        elements.push_back(argdata_builder->BuildStr(%s_Name(element)));' % self._name)
+
     def print_code(self, declarations):
         print('enum %s {' % self._name)
         print('  %s' % ',\n  '.join('%s = %d' % constant for constant in sorted(self._constants.items())))
