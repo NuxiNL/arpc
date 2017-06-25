@@ -898,7 +898,7 @@ class ServiceDeclaration:
 
 ProtoFile = (
     'syntax', '=', ['"proto3"', '\'proto3\''], ';',
-    'package', pypeg2.word, ';',
+    'package', pypeg2.csl(pypeg2.word, separator='.'), ';',
     pypeg2.ignore((
         pypeg2.maybe_some(['import', 'option'], pypeg2.restline),
     )),
@@ -913,9 +913,12 @@ ProtoFile = (
 input_str = sys.stdin.read()
 input_sha256 = hashlib.sha256(input_str.encode('UTF-8')).hexdigest()
 declarations = pypeg2.parse(input_str, ProtoFile, comment=pypeg2.comment_cpp)
-package = declarations[0]
+package = []
+while isinstance(declarations[0], str):
+    package.append(declarations[0])
+    declarations = declarations[1:]
 declarations = {declaration.get_name(): declaration
-                for declaration in declarations[2:]}
+                for declaration in declarations[1:]}
 
 def sort_declarations_by_dependencies(declarations):
     return toposort.toposort_flatten(
@@ -936,7 +939,8 @@ print()
 print('#include <argdata.h>')
 print('#include <arpc++/arpc++.h>')
 print()
-print('namespace %s {' % package)
+for component in package:
+    print('namespace %s {' % component)
 print('namespace {')
 print()
 
@@ -945,7 +949,8 @@ for declaration in sort_declarations_by_dependencies(declarations.values()):
     print()
 
 print('}')
-print('}')
+for component in package:
+    print('}')
 print()
 
 print('#endif')
