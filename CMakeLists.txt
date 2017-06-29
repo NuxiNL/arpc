@@ -51,7 +51,7 @@ if(BUILD_TESTS)
 
   add_custom_command(OUTPUT server_test_proto.h
     COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/server_test_proto.proto >${CMAKE_BINARY_DIR}/server_test_proto.h
-   DEPENDS ${CMAKE_SOURCE_DIR}/src/server_test_proto.proto
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/server_test_proto.proto
   )
 
   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
