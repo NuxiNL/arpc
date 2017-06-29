@@ -84,17 +84,17 @@ class IntegerType(NumericType):
 
     def print_parsing_map_key(self):
         print('          std::%s_t mapkey;' % self._name)
-        print('          if (argdata_get_int(value2, &mapkey) == 0) {')
+        print('          if (argdata_get_int(key2, &mapkey) == 0) {')
 
     def print_parsing_map_value(self, name, declarations):
-        print('            std::%s_t key2int;' % self._name);
-        print('            if (argdata_get_int(key2, &key2int) == 0)')
-        print('              %s_.emplace(mapkey, 0).first->second = key2int;' % name)
+        print('              std::%s_t value2int;' % self._name);
+        print('              if (argdata_get_int(value2, &value2int) == 0)')
+        print('                %s_.emplace(mapkey, 0).first->second = value2int;' % name)
 
     def print_parsing_repeated(self, name, declarations):
-        print('          std::%s_t elementint;' % self._name)
-        print('          if (argdata_get_int(element, &elementint) == 0)')
-        print('            %s_.push_back(elementint);' % name)
+        print('            std::%s_t elementint;' % self._name)
+        print('            if (argdata_get_int(element, &elementint) == 0)')
+        print('              %s_.push_back(elementint);' % name)
 
 
 class Int32Type(IntegerType):
@@ -576,22 +576,22 @@ class EnumDeclaration:
         print('  %s %s_;' % (self._name, name))
 
     def print_parsing(self, name):
-        print('          const char* enumstr;')
-        print('          std::size_t enumlen;')
-        print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
-        print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_);' % (self._name, name))
+        print('          const char* valuestr;')
+        print('          std::size_t valuelen;')
+        print('          if (argdata_get_str(value, &valuestr, &valuelen) == 0)')
+        print('            %s_Parse(std::string_view(valuestr, valuelen), &%s_);' % (self._name, name))
 
     def print_parsing_map_value(self, name):
-        print('          const char* enumstr;')
-        print('          std::size_t enumlen;')
-        print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
-        print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_.emplace(mapkey, %s::%s).first->second);' % (self._name, name, self._name, self._canonical[0]))
+        print('            const char* value2str;')
+        print('            std::size_t value2len;')
+        print('            if (argdata_get_str(value2, &value2str, &value2len) == 0)')
+        print('              %s_Parse(std::string_view(value2str, value2len), &%s_.emplace(mapkey, %s::%s).first->second);' % (self._name, name, self._name, self._canonical[0]))
 
     def print_parsing_repeated(self, name):
-        print('          const char* enumstr;')
-        print('          std::size_t enumlen;')
-        print('          if (argdata_get_str(value, &enumstr, &enumlen) == 0)')
-        print('            %s_Parse(std::string_view(enumstr, enumlen), &%s_.emplace_back(%s::%s));' % (self._name, name, self._name, self._canonical[0]))
+        print('            const char* elementstr;')
+        print('            std::size_t elementlen;')
+        print('            if (argdata_get_str(element, &elementstr, &elementlen) == 0)')
+        print('              %s_Parse(std::string_view(elementstr, elementlen), &%s_.emplace_back(%s::%s));' % (self._name, name, self._name, self._canonical[0]))
 
 
 class MessageFieldDeclaration:
@@ -732,10 +732,10 @@ class MessageDeclaration:
         print('          %s_.Parse(*value, argdata_parser);' % name)
 
     def print_parsing_map_value(self, name):
-        print('          %s_.emplace(mapkey, %s()).first->second.Parse(*value2, argdata_parser);' % (name, self._name))
+        print('              %s_.emplace(mapkey, %s()).first->second.Parse(*value2, argdata_parser);' % (name, self._name))
 
     def print_parsing_repeated(self, name):
-        print('          %s_.emplace_back().Parse(*element, argdata_parser);' % name)
+        print('            %s_.emplace_back().Parse(*element, argdata_parser);' % name)
 
 
 class ServiceRpcDeclaration:
