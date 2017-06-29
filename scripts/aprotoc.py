@@ -208,16 +208,16 @@ class StringType(StringlikeType):
         print('            %s_ = std::string_view(valuestr, valuelen);' % name)
 
     def print_parsing_map_key(self):
-        print('            const char* value2str;');
-        print('            std::size_t value2len;');
-        print('            if (argdata_get_str(value2, &value2str, &value2len) == 0) {')
-        print('              std::string_view mapkey(value2str, value2len);')
+        print('            const char* key2str;');
+        print('            std::size_t key2len;');
+        print('            if (argdata_get_str(key2, &key2str, &key2len) == 0) {')
+        print('              std::string_view mapkey(key2str, key2len);')
 
     def print_parsing_map_value(self, name, declarations):
-        print('              const char* key2str;');
-        print('              std::size_t key2len;');
-        print('              if (argdata_get_str(key2, &key2str, &key2len) == 0)')
-        print('                %s_.emplace(mapkey, std::string()).first->second = std::string_view(key2str, key2len);' % name)
+        print('              const char* value2str;');
+        print('              std::size_t value2len;');
+        print('              if (argdata_get_str(value2, &value2str, &value2len) == 0)')
+        print('                %s_.emplace(mapkey, std::string()).first->second = std::string_view(value2str, value2len);' % name)
 
     def print_parsing_repeated(self, name, declarations):
         print('            const char* elementstr;');
