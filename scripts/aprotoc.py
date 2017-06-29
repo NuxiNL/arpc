@@ -546,6 +546,8 @@ class EnumDeclaration:
         print('  %s' % ',\n  '.join('%s = %d' % constant for constant in sorted(self._constants.items())))
         print('};')
         print()
+        print('namespace {')
+        print()
         print('inline bool %s_IsValid(int value) {' % self._name)
         print('  return %s;' % ' || '.join('value == %d' % v for v in sorted(self._canonical)))
         print('}')
@@ -567,6 +569,8 @@ class EnumDeclaration:
         print('const %s %s_MIN = %s::%s;' % (self._name, self._name, self._name, self._canonical[min(self._canonical)]))
         print('const %s %s_MAX = %s::%s;' % (self._name, self._name, self._name, self._canonical[max(self._canonical)]))
         print('const std::size_t %s_ARRAYSIZE = %d;' % (self._name, max(self._canonical) + 1))
+        print()
+        print('}  // namespace')
 
     def print_fields(self, name):
         print('  %s %s_;' % (self._name, name))
@@ -891,11 +895,14 @@ class ServiceDeclaration:
         print('  const std::shared_ptr<arpc::Channel> channel_;')
         print('};')
         print()
-        print('std::unique_ptr<Stub> NewStub(const std::shared_ptr<arpc::Channel>& channel) {')
+        print('namespace {')
+        print()
+        print('inline std::unique_ptr<Stub> NewStub(const std::shared_ptr<arpc::Channel>& channel) {')
         print('  return std::make_unique<Stub>(channel);')
         print('}')
         print()
-        print('}')
+        print('}  // namespace')
+        print('}  // namespace', self._name)
         pass
 
 
@@ -944,16 +951,14 @@ print('#include <arpc++/arpc++.h>')
 print()
 for component in package:
     print('namespace %s {' % component)
-print('namespace {')
 print()
 
 for declaration in sort_declarations_by_dependencies(declarations.values()):
     declarations[declaration].print_code(declarations)
     print()
 
-print('}')
-for component in package:
-    print('}')
+for component in reversed(package):
+    print('}  // namespace', component)
 print()
 
 print('#endif')
