@@ -850,7 +850,7 @@ class ServiceDeclaration:
         return r
 
     def print_code(self, declarations):
-        print('namespace %s {' % self._name)
+        print('struct %s {' % self._name)
         print()
         print('class Service : public arpc::Service {')
         print(' public:')
@@ -895,15 +895,11 @@ class ServiceDeclaration:
         print('  const std::shared_ptr<arpc::Channel> channel_;')
         print('};')
         print()
-        print('namespace {')
-        print()
-        print('inline std::unique_ptr<Stub> NewStub(const std::shared_ptr<arpc::Channel>& channel) {')
+        print('static std::unique_ptr<Stub> NewStub(const std::shared_ptr<arpc::Channel>& channel) {')
         print('  return std::make_unique<Stub>(channel);')
         print('}')
         print()
-        print('}  // namespace')
-        print('}  // namespace', self._name)
-        pass
+        print('};')
 
 
 ProtoFile = (
