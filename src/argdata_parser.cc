@@ -18,8 +18,9 @@ ArgdataParser::~ArgdataParser() {
   // messages containing them. Allow the reader to close any file
   // descriptors attached to the message, except those that have been
   // handed out by us.
-  for (const auto& file_descriptor : file_descriptors_)
-    argdata_reader_release_fd(reader_, file_descriptor->get());
+  if (reader_ != nullptr)
+    for (const auto& file_descriptor : file_descriptors_)
+      argdata_reader_release_fd(reader_, file_descriptor->get());
 }
 
 const argdata_t* ArgdataParser::ParseAnyFromMap(

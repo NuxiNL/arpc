@@ -77,7 +77,7 @@ class FileDescriptor {
 // google.protobuf.Any fields work.
 class ArgdataParser {
  public:
-  ArgdataParser(argdata_reader_t* reader);
+  explicit ArgdataParser(argdata_reader_t* reader = nullptr);
   ~ArgdataParser();
 
   const argdata_t* ParseAnyFromMap(const argdata_map_iterator_t& it);
