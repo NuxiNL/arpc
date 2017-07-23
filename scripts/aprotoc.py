@@ -457,7 +457,7 @@ class RepeatedType:
         self._type.print_accessors_repeated(name, declarations)
         print('  void clear_%s() { %s_.clear(); }' % (name, name))
         print('  const %s& %s() const { return %s_; }' % (self.get_storage_type(declarations), name, name))
-        print('  %s* %s() { return &%s_; }' % (self.get_storage_type(declarations), name, name))
+        print('  %s* mutable_%s() { return &%s_; }' % (self.get_storage_type(declarations), name, name))
 
     def print_building(self, name, declarations):
         print('      std::vector<const argdata_t*> elements;')
