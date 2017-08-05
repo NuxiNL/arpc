@@ -16,7 +16,7 @@ using namespace arpc;
 ClientReaderImpl::ClientReaderImpl(Channel* channel, const RpcMethod& method,
                                    ClientContext* context,
                                    const Message& request)
-    : fd_(channel->GetFileDescriptor()), finished_(false) {
+    : channel_(channel), finished_(false) {
   // Send the request.
   arpc_protocol::ClientMessage client_message;
   arpc_protocol::UnaryRequest* unary_request =
@@ -30,9 +30,11 @@ ClientReaderImpl::ClientReaderImpl(Channel* channel, const RpcMethod& method,
 
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   writer->set(client_message.Build(&argdata_builder));
-  int error = writer->push(fd_->get());
-  if (error != 0)
+  int error = writer->push(channel_->GetFileDescriptor()->get());
+  if (error != 0) {
+    channel_->ShutDown();
     status_ = Status(StatusCode::INTERNAL, strerror(error));
+  }
 }
 
 ClientReaderImpl::~ClientReaderImpl() {
@@ -51,8 +53,9 @@ bool ClientReaderImpl::Read(Message* msg) {
   // TODO(ed): Make buffer size configurable!
   std::unique_ptr<argdata_reader_t> reader = argdata_reader_t::create(4096, 16);
   {
-    int error = reader->pull(fd_->get());
+    int error = reader->pull(channel_->GetFileDescriptor()->get());
     if (error != 0) {
+      channel_->ShutDown();
       status_ = Status(StatusCode::INTERNAL, strerror(error));
       finished_ = true;
       return false;

@@ -38,6 +38,11 @@
 
 #include <argdata.hpp>
 
+enum arpc_connectivity_state {
+  ARPC_CHANNEL_READY,
+  ARPC_CHANNEL_SHUTDOWN,
+};
+
 namespace arpc {
 
 class ClientContext;
@@ -219,19 +224,29 @@ class Service {
 // ARPC client.
 class Channel {
  public:
-  explicit Channel(const std::shared_ptr<FileDescriptor>& fd) : fd_(fd) {
+  explicit Channel(const std::shared_ptr<FileDescriptor>& fd)
+      : fd_(fd), shut_down_(false) {
   }
 
   Status BlockingUnaryCall(const RpcMethod& method, ClientContext* context,
                            const Message& request, Message* response);
   Status FinishUnaryResponse(Message* response);
 
+  arpc_connectivity_state GetState(bool try_to_connect) {
+    return shut_down_ ? ARPC_CHANNEL_SHUTDOWN : ARPC_CHANNEL_READY;
+  }
+
   const std::shared_ptr<FileDescriptor>& GetFileDescriptor() {
     return fd_;
   }
 
+  void ShutDown() {
+    shut_down_ = true;
+  }
+
  private:
   const std::shared_ptr<FileDescriptor> fd_;
+  bool shut_down_;
 };
 
 std::shared_ptr<Channel> CreateChannel(
@@ -250,7 +265,7 @@ class ClientReaderImpl {
   bool Read(Message* msg);
 
  private:
-  const std::shared_ptr<FileDescriptor> fd_;
+  Channel* const channel_;
   Status status_;
   bool finished_;
 };

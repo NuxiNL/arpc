@@ -246,6 +246,7 @@ TEST(Server, ServerStreamFibonacci) {
   EXPECT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, fds));
   std::shared_ptr<arpc::Channel> channel =
       arpc::CreateChannel(std::make_shared<arpc::FileDescriptor>(fds[0]));
+  EXPECT_EQ(ARPC_CHANNEL_READY, channel->GetState(false));
   std::unique_ptr<server_test_proto::ServerStreamFibonacciService::Stub> stub =
       server_test_proto::ServerStreamFibonacciService::NewStub(channel);
   std::thread caller([&stub]() {
@@ -273,10 +274,31 @@ TEST(Server, ServerStreamFibonacci) {
     EXPECT_TRUE(reader->Finish().ok());
   });
 
-  arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
-  FibonacciService service;
-  builder.RegisterService(&service);
-  std::shared_ptr<arpc::Server> server = builder.Build();
-  EXPECT_EQ(0, server->HandleRequest());
-  caller.join();
+  // Process a single request from a client. The channel should still be
+  // in the ready state after the RPC completes.
+  {
+    arpc::ServerBuilder builder(std::make_shared<arpc::FileDescriptor>(fds[1]));
+    FibonacciService service;
+    builder.RegisterService(&service);
+    std::shared_ptr<arpc::Server> server = builder.Build();
+    EXPECT_EQ(0, server->HandleRequest());
+    caller.join();
+    EXPECT_EQ(ARPC_CHANNEL_READY, channel->GetState(false));
+  }
+
+  // Sending another RPC after the server has terminated should cause
+  // the RPC to fail and the channel to switch to the shut down state.
+  {
+    arpc::ClientContext context;
+    server_test_proto::FibonacciInput input;
+    server_test_proto::FibonacciOutput output;
+    input.set_a(1);
+    input.set_b(1);
+    input.set_terms(5);
+    std::unique_ptr<arpc::ClientReader<server_test_proto::FibonacciOutput>>
+        reader(stub->GetSequence(&context, input));
+    EXPECT_FALSE(reader->Read(&output));
+    EXPECT_FALSE(reader->Finish().ok());
+    EXPECT_EQ(ARPC_CHANNEL_SHUTDOWN, channel->GetState(false));
+  }
 }

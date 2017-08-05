@@ -28,8 +28,10 @@ ClientWriterImpl::ClientWriterImpl(Channel* channel, const RpcMethod& method,
   ArgdataBuilder argdata_builder;
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
-  if (error != 0)
+  if (error != 0) {
+    channel_->ShutDown();
     status_ = Status(StatusCode::INTERNAL, strerror(error));
+  }
 }
 
 ClientWriterImpl::~ClientWriterImpl() {
@@ -58,6 +60,7 @@ bool ClientWriterImpl::Write(const Message& msg) {
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
   if (error != 0) {
+    channel_->ShutDown();
     status_ = Status(StatusCode::INTERNAL, strerror(error));
     return false;
   }
@@ -79,6 +82,7 @@ bool ClientWriterImpl::WritesDone() {
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
   if (error != 0) {
+    channel_->ShutDown();
     status_ = Status(StatusCode::INTERNAL, strerror(error));
     return false;
   }

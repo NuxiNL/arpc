@@ -28,8 +28,10 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(fd_->get());
-  if (error != 0)
+  if (error != 0) {
+    ShutDown();
     return Status(StatusCode::INTERNAL, strerror(error));
+  }
 
   // Process the response.
   return FinishUnaryResponse(response);
@@ -39,8 +41,10 @@ Status Channel::FinishUnaryResponse(Message* response) {
   // TODO(ed): Make message size configurable.
   std::unique_ptr<argdata_reader_t> reader = argdata_reader_t::create(4096, 16);
   int error = reader->pull(fd_->get());
-  if (error != 0)
+  if (error != 0) {
+    ShutDown();
     return Status(StatusCode::INTERNAL, strerror(error));
+  }
   const argdata_t* server_response = reader->get();
   if (server_response == nullptr)
     return Status(StatusCode::INTERNAL, "Channel closed by server");
