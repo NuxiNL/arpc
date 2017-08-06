@@ -3,6 +3,8 @@
 // This file is distributed under a 2-clause BSD license.
 // See the LICENSE file for details.
 
+#include <poll.h>
+
 #include <cstring>
 #include <memory>
 
@@ -28,10 +30,8 @@ Status Channel::BlockingUnaryCall(const RpcMethod& method,
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(fd_->get());
-  if (error != 0) {
-    ShutDown();
+  if (error != 0)
     return Status(StatusCode::INTERNAL, strerror(error));
-  }
 
   // Process the response.
   return FinishUnaryResponse(response);
@@ -41,10 +41,8 @@ Status Channel::FinishUnaryResponse(Message* response) {
   // TODO(ed): Make message size configurable.
   std::unique_ptr<argdata_reader_t> reader = argdata_reader_t::create(4096, 16);
   int error = reader->pull(fd_->get());
-  if (error != 0) {
-    ShutDown();
+  if (error != 0)
     return Status(StatusCode::INTERNAL, strerror(error));
-  }
   const argdata_t* server_response = reader->get();
   if (server_response == nullptr)
     return Status(StatusCode::INTERNAL, "Channel closed by server");
@@ -61,6 +59,16 @@ Status Channel::FinishUnaryResponse(Message* response) {
   response->Parse(*unary_response.response(), &argdata_parser);
   const arpc_protocol::Status& status = unary_response.status();
   return Status(StatusCode(status.code()), status.message());
+}
+
+arpc_connectivity_state Channel::GetState(bool try_to_connect) {
+  // Perform a non-blocking poll() call to check file descriptor state.
+  struct pollfd pfd = {.fd = fd_->get(), .events = POLLIN | POLLOUT};
+  if (poll(&pfd, 1, 0) == -1)
+    return ARPC_CHANNEL_SHUTDOWN;
+  return (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) == 0
+             ? ARPC_CHANNEL_READY
+             : ARPC_CHANNEL_SHUTDOWN;
 }
 
 std::shared_ptr<Channel> arpc::CreateChannel(

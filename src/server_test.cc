@@ -286,8 +286,12 @@ TEST(Server, ServerStreamFibonacci) {
     EXPECT_EQ(ARPC_CHANNEL_READY, channel->GetState(false));
   }
 
+  // Destroying the server immediately causes the channel to be switched
+  // to the shut down state.
+  EXPECT_EQ(ARPC_CHANNEL_SHUTDOWN, channel->GetState(false));
+
   // Sending another RPC after the server has terminated should cause
-  // the RPC to fail and the channel to switch to the shut down state.
+  // the RPC to fail. The channel should remain in the shut down state.
   {
     arpc::ClientContext context;
     server_test_proto::FibonacciInput input;
