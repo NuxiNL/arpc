@@ -222,6 +222,7 @@ class Service {
 };
 
 // ARPC client.
+// TODO(ed): Fix thread safety!
 class Channel {
  public:
   explicit Channel(const std::shared_ptr<FileDescriptor>& fd) : fd_(fd) {
