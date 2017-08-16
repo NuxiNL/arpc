@@ -33,6 +33,7 @@ add_library(arpc
 )
 target_link_libraries(arpc PUBLIC argdata)
 target_include_directories(arpc PUBLIC include)
+set_property(TARGET arpc PROPERTY VERSION "1")
 
 install(FILES scripts/aprotoc.py
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
