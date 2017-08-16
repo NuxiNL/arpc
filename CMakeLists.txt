@@ -49,7 +49,7 @@ install(TARGETS arpc EXPORT arpc
 )
 
 if(BUILD_TESTS)
-  add_subdirectory(contrib/googletest-release-1.8.0/googletest)
+  add_subdirectory(contrib/googletest-release-1.8.0/googletest EXCLUDE_FROM_ALL)
 
   add_custom_command(OUTPUT server_test_proto.h
     COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/server_test_proto.proto >${CMAKE_BINARY_DIR}/server_test_proto.h
