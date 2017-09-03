@@ -78,8 +78,9 @@ TEST(Server, ServiceNotRegistered) {
   caller.join();
 }
 
-// Simple service that does nothing more than echoing responses.
 namespace {
+
+// Simple service that does nothing more than echoing responses.
 class EchoService final : public server_test_proto::UnaryService::Service {
  public:
   arpc::Status UnaryCall(arpc::ServerContext* context,
@@ -90,7 +91,8 @@ class EchoService final : public server_test_proto::UnaryService::Service {
     return arpc::Status::OK;
   }
 };
-}
+
+}  // namespace
 
 TEST(Server, UnaryEcho) {
   // Invoke RPCs on the EchoService and check whether the input text
@@ -161,8 +163,9 @@ TEST(Server, UnaryFileDesciptorPassing) {
   caller.join();
 }
 
-// Service that adds a stream of numbers.
 namespace {
+
+// Service that adds a stream of numbers.
 class AdderService final
     : public server_test_proto::ClientStreamAdderService::Service {
  public:
@@ -177,7 +180,8 @@ class AdderService final
     return arpc::Status::OK;
   }
 };
-}
+
+}  // namespace
 
 TEST(Server, ClientStreamAdder) {
   // Use the AdderService to add some numbers together.
@@ -219,6 +223,8 @@ TEST(Server, ClientStreamAdder) {
 }
 
 namespace {
+
+// Service that generates a stream of numbers.
 class FibonacciService final
     : public server_test_proto::ServerStreamFibonacciService::Service {
  public:
@@ -238,7 +244,8 @@ class FibonacciService final
     return arpc::Status::OK;
   }
 };
-}
+
+}  // namespace
 
 TEST(Server, ServerStreamFibonacci) {
   // Use the FibonacciService to stream a sequence of messages to a client.
