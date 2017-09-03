@@ -75,7 +75,7 @@ class FileDescriptor {
   FileDescriptor(FileDescriptor const&) = delete;
   void operator=(FileDescriptor const& x) = delete;
 
-  int fd_;
+  const int fd_;
 };
 
 // Helper class that tracks conversion state when converting an
