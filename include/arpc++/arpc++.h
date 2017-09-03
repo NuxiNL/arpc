@@ -73,7 +73,7 @@ class FileDescriptor {
 
  private:
   FileDescriptor(FileDescriptor const&) = delete;
-  void operator=(FileDescriptor const& x) = delete;
+  void operator=(FileDescriptor const&) = delete;
 
   const int fd_;
 };
