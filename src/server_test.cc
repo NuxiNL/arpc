@@ -124,7 +124,6 @@ TEST(Server, UnaryEcho) {
   EXPECT_EQ(0, server->HandleRequest());
   EXPECT_EQ(0, server->HandleRequest());
   caller.join();
-  EXPECT_EQ(0, close(fds[0]));
 }
 
 TEST(Server, UnaryFileDesciptorPassing) {

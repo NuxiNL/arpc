@@ -27,6 +27,8 @@
 #include <unistd.h>
 
 #include <cassert>
+#include <cerrno>
+#include <exception>
 #include <forward_list>
 #include <map>
 #include <memory>
@@ -60,7 +62,9 @@ class FileDescriptor {
   }
 
   ~FileDescriptor() {
-    close(fd_);
+    // Terminate if file descriptor ownership is botched.
+    if (close(fd_) != 0 && errno == EBADF)
+      std::terminate();
   }
 
   int get() const {
