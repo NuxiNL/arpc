@@ -1,8 +1,9 @@
-// Copyright (c) 2017 Nuxi (https://nuxi.nl/) and contributors.
+// Copyright (c) 2017-2018 Nuxi (https://nuxi.nl/) and contributors.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <cassert>
+#include <cstring>
 
 #include <arpc++/arpc++.h>
 #include <argdata.hpp>
@@ -28,7 +29,7 @@ ClientWriterImpl::ClientWriterImpl(Channel* channel, const RpcMethod& method,
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
   if (error != 0)
-    status_ = Status(StatusCode::INTERNAL, strerror(error));
+    status_ = Status(StatusCode::INTERNAL, std::strerror(error));
 }
 
 ClientWriterImpl::~ClientWriterImpl() {
@@ -57,7 +58,7 @@ bool ClientWriterImpl::Write(const Message& msg) {
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
   if (error != 0) {
-    status_ = Status(StatusCode::INTERNAL, strerror(error));
+    status_ = Status(StatusCode::INTERNAL, std::strerror(error));
     return false;
   }
   return true;
@@ -78,7 +79,7 @@ bool ClientWriterImpl::WritesDone() {
   writer->set(client_message.Build(&argdata_builder));
   int error = writer->push(channel_->GetFileDescriptor()->get());
   if (error != 0) {
-    status_ = Status(StatusCode::INTERNAL, strerror(error));
+    status_ = Status(StatusCode::INTERNAL, std::strerror(error));
     return false;
   }
   return true;
