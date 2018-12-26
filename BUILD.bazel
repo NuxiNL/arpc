@@ -1,0 +1,45 @@
+load("//:aprotoc.bzl", "aprotoc")
+
+aprotoc(
+    name = "arpc_protocol",
+    src = "src/arpc_protocol.proto",
+)
+
+aprotoc(
+    name = "server_test_proto",
+    src = "src/server_test_proto.proto",
+)
+
+cc_library(
+    name = "arpc",
+    srcs = [
+        "src/argdata_builder.cc",
+        "src/argdata_parser.cc",
+        "src/channel.cc",
+        "src/client_reader_impl.cc",
+        "src/client_writer_impl.cc",
+        "src/server.cc",
+        "src/server_reader_impl.cc",
+        "src/server_writer_impl.cc",
+        "src/status.cc",
+        "src/status_code.cc",
+        ":arpc_protocol",
+    ],
+    hdrs = ["include/arpc++/arpc++.h"],
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_nuxinl_argdata//:argdata"],
+)
+
+# TODO(ed): Add logic to disable SIGPIPE to make this test pass.
+cc_test(
+    name = "arpc_test",
+    srcs = [
+        "src/server_test.cc",
+        ":server_test_proto",
+    ],
+    deps = [
+        "//:arpc",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

@@ -1,0 +1,11 @@
+load("@aprotoc_deps//:requirements.bzl", "requirement")
+
+py_binary(
+    name = "aprotoc",
+    srcs = ["aprotoc.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("pyPEG2"),
+        requirement("toposort"),
+    ],
+)
