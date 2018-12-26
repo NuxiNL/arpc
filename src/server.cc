@@ -50,7 +50,6 @@ int Server::HandleRequest() {
       } else {
         // Service found. Invoke call.
         ServerContext context;
-        const argdata_t* response = argdata_t::null();
         ServerWriterImpl writer(fd_);
         Status rpc_status = service->second->BlockingServerStreamingCall(
             rpc_method.rpc(), &context, *unary_request.request(),

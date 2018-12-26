@@ -71,8 +71,6 @@ bool ClientWriterImpl::WritesDone() {
     return false;
 
   arpc_protocol::ClientMessage client_message;
-  arpc_protocol::StreamingRequestFinish* streaming_request_finish =
-      client_message.mutable_streaming_request_finish();
 
   std::unique_ptr<argdata_writer_t> writer = argdata_writer_t::create();
   ArgdataBuilder argdata_builder;
