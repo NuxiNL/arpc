@@ -10,15 +10,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_TESTS "Build test programs, using Google Test" ON)
 
-add_custom_command(OUTPUT arpc_protocol.h
-  COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto >${CMAKE_BINARY_DIR}/arpc_protocol.h
+add_custom_command(OUTPUT arpc_protocol.ad.h
+  COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto >${CMAKE_BINARY_DIR}/arpc_protocol.ad.h
   DEPENDS ${CMAKE_SOURCE_DIR}/src/arpc_protocol.proto
 )
 
 include_directories(${CMAKE_BINARY_DIR})
 
 add_library(arpc
-  arpc_protocol.h
+  arpc_protocol.ad.h
   include/arpc++/arpc++.h
   src/argdata_builder.cc
   src/argdata_parser.cc
@@ -52,15 +52,15 @@ install(TARGETS arpc EXPORT arpc
 if(BUILD_TESTS)
   add_subdirectory(contrib/googletest-release-1.8.0/googletest EXCLUDE_FROM_ALL)
 
-  add_custom_command(OUTPUT server_test_proto.h
-    COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/server_test_proto.proto >${CMAKE_BINARY_DIR}/server_test_proto.h
+  add_custom_command(OUTPUT server_test_proto.ad.h
+    COMMAND ${CMAKE_SOURCE_DIR}/scripts/aprotoc.py <${CMAKE_SOURCE_DIR}/src/server_test_proto.proto >${CMAKE_BINARY_DIR}/server_test_proto.ad.h
     DEPENDS ${CMAKE_SOURCE_DIR}/src/server_test_proto.proto
   )
 
   include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
   add_executable(arpc_tests
-    server_test_proto.h
+    server_test_proto.ad.h
     src/server_test.cc
   )
   target_link_libraries(arpc_tests arpc gtest_main)

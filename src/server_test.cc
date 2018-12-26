@@ -15,7 +15,7 @@
 #include <gtest/gtest.h>
 #include <argdata.hpp>
 
-#include "server_test_proto.h"
+#include "server_test_proto.ad.h"
 
 TEST(Server, EndOfFile) {
   // Close one half of a socket pair. Reading requests should return

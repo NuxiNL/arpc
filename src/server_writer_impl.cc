@@ -5,7 +5,7 @@
 #include <arpc++/arpc++.h>
 #include <argdata.hpp>
 
-#include "arpc_protocol.h"
+#include "arpc_protocol.ad.h"
 
 using namespace arpc;
 

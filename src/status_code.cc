@@ -4,7 +4,7 @@
 
 #include <arpc++/arpc++.h>
 
-#include "arpc_protocol.h"
+#include "arpc_protocol.ad.h"
 
 using namespace arpc;
 
