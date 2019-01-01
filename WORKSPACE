@@ -1,9 +1,9 @@
-workspace(name = "com_github_nuxinl_arpc")
+workspace(name = "org_cloudabi_arpc")
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
-    name = "com_github_nuxinl_argdata",
+    name = "org_cloudabi_argdata",
     commit = "6299455171a28831876d078c59a6634de6f6700b",
     remote = "https://github.com/NuxiNL/argdata.git",
 )

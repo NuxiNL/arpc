@@ -30,7 +30,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":arpc_protocol_library",
-        "@com_github_nuxinl_argdata//:argdata",
+        "@org_cloudabi_argdata//:argdata",
     ],
 )
 

@@ -9,6 +9,6 @@ def aprotoc(name, src):
         name = name,
         srcs = [src],
         outs = [header_name],
-        cmd = "./$(location @com_github_nuxinl_arpc//scripts:aprotoc) < $(location %s) > $@" % src,
-        tools = ["@com_github_nuxinl_arpc//scripts:aprotoc"],
+        cmd = "./$(location @org_cloudabi_arpc//scripts:aprotoc) < $(location %s) > $@" % src,
+        tools = ["@org_cloudabi_arpc//scripts:aprotoc"],
     )
