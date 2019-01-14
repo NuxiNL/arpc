@@ -4,7 +4,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
     name = "org_cloudabi_argdata",
-    commit = "6299455171a28831876d078c59a6634de6f6700b",
+    commit = "9da87f137386b85e59e9ff149913c0ea519c7986",
     remote = "https://github.com/NuxiNL/argdata.git",
 )
 
